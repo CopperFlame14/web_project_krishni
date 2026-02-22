@@ -5,6 +5,16 @@ const { getCurrentTimeSlot, getSystemConfig } = require('../services/statusEngin
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 
+// GET /api/timetable/ - Alias for /slots
+router.get('/', async (req, res) => {
+    try {
+        const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
+        res.json(slots);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/timetable/slots - Get all time slots
 router.get('/slots', async (req, res) => {
     try {

@@ -17,37 +17,46 @@ const AdminService = {
 
     // 2. Global Statistics
     async getGlobalStats() {
-        const [profCount, studCount, courseCount, enrollCount] = await Promise.all([
-            prepare("SELECT COUNT(*) as c FROM users WHERE role = 'professor'").get(),
-            prepare("SELECT COUNT(*) as c FROM users WHERE role = 'student'").get(),
-            prepare("SELECT COUNT(*) as c FROM courses").get(),
-            prepare("SELECT COUNT(*) as c FROM enrollments").get()
-        ]);
+        try {
+            const [profCount, studCount, courseCount, enrollCount] = await Promise.all([
+                prepare("SELECT COUNT(*) as c FROM users WHERE role = 'professor'").get().catch(() => ({ c: 0 })),
+                prepare("SELECT COUNT(*) as c FROM users WHERE role = 'student'").get().catch(() => ({ c: 0 })),
+                prepare("SELECT COUNT(*) as c FROM courses").get().catch(() => ({ c: 0 })),
+                prepare("SELECT COUNT(*) as c FROM enrollments").get().catch(() => ({ c: 0 }))
+            ]);
 
-        return {
-            professors: parseInt(profCount.c),
-            students: parseInt(studCount.c),
-            courses: parseInt(courseCount.c),
-            enrollments: parseInt(enrollCount.c),
-            isFrozen: await this.isFrozen()
-        };
+            return {
+                professors: parseInt(profCount.c || 0),
+                students: parseInt(studCount.c || 0),
+                courses: parseInt(courseCount.c || 0),
+                enrollments: parseInt(enrollCount.c || 0),
+                isFrozen: await this.isFrozen().catch(() => false)
+            };
+        } catch (err) {
+            console.error('Stats fetch error:', err);
+            return { professors: 0, students: 0, courses: 0, enrollments: 0, isFrozen: false };
+        }
     },
 
     // 3. Extended stats
     async getStats() {
-        const base = await this.getGlobalStats();
-        const [activeCourses, pendingRequests, activeClassrooms] = await Promise.all([
-            prepare("SELECT COUNT(*) as c FROM courses WHERE status = 'active'").get(),
-            prepare("SELECT COUNT(*) as c FROM enrollment_requests WHERE status = 'pending'").get(),
-            prepare("SELECT COUNT(*) as c FROM classrooms").get()
-        ]);
+        try {
+            const base = await this.getGlobalStats();
+            const [activeCourses, pendingRequests, activeClassrooms] = await Promise.all([
+                prepare("SELECT COUNT(*) as c FROM courses WHERE status = 'active'").get().catch(() => ({ c: 0 })),
+                prepare("SELECT COUNT(*) as c FROM enrollment_requests WHERE status = 'pending'").get().catch(() => ({ c: 0 })),
+                prepare("SELECT COUNT(*) as c FROM classrooms").get().catch(() => ({ c: 0 }))
+            ]);
 
-        return {
-            ...base,
-            activeCourses: parseInt(activeCourses.c),
-            pendingRequests: parseInt(pendingRequests.c),
-            totalClassrooms: parseInt(activeClassrooms.c)
-        };
+            return {
+                ...base,
+                activeCourses: parseInt(activeCourses.c || 0),
+                pendingRequests: parseInt(pendingRequests.c || 0),
+                totalClassrooms: parseInt(activeClassrooms.c || 0)
+            };
+        } catch (err) {
+            return { professors: 0, students: 0, courses: 0, enrollments: 0, isFrozen: false, activeCourses: 0, pendingRequests: 0, totalClassrooms: 0 };
+        }
     },
 
     // 4. User management

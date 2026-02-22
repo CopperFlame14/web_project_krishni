@@ -48,7 +48,7 @@ app.use('/api/noise', noiseRoutes);
 
 // Compatibility alias for old admin stats
 app.get('/api/admin/stats', (req, res) => {
-    req.url = '/dashboard';
+    req.url = '/stats';
     adminRoutes(req, res, () => { });
 });
 

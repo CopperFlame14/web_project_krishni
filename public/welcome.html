@@ -252,9 +252,9 @@
         const token = localStorage.getItem('campus_token');
         const role = localStorage.getItem('campus_role');
         if (token && role) {
-            if (role === 'admin') window.location.href = '/admin/dashboard.html';
-            else if (role === 'professor') window.location.href = '/professor/dashboard.html';
-            else window.location.href = '/student/dashboard.html';
+            if (role === 'admin') window.location.href = '/admin';
+            else if (role === 'professor') window.location.href = '/professor';
+            else window.location.href = '/student';
         }
     </script>
 </body>
