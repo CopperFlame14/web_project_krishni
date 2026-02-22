@@ -12,6 +12,16 @@ async function seed() {
         console.log('📜 Applying schema...');
         const schemaPath = path.join(__dirname, 'schema.sql');
         const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+
+        // FORCE RESET for Phase 2 (Ensures legacy tables don't block structural changes like UUIDs/Academic Year)
+        console.log('🧹 Dropping legacy tables for fresh Phase 2 schema...');
+        await exec(`
+            DROP TABLE IF EXISTS 
+            notifications, reservations, course_sessions, enrollments, 
+            student_timetables, timetable, courses, subjects, professor_classes, 
+            users, classrooms, floors, blocks, time_slots, system_settings CASCADE
+        `);
+
         await exec(schemaSql);
         console.log('✅ Schema applied successfully');
 
