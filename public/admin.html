@@ -5,13 +5,207 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - ClassTrack</title>
-    <meta name="description" content="Admin panel for managing classroom reservations and status overrides.">
+    <meta name="description" content="Admin panel for managing users, classes, and room operations.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        /* ── Admin-specific tabs & layout ── */
+        .admin-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab-btn {
+            padding: 0.6rem 1.25rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .admin-tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .admin-tab-btn:hover:not(.active) {
+            color: var(--text);
+        }
+
+        .admin-tab-pane {
+            display: none;
+        }
+
+        .admin-tab-pane.active {
+            display: block;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover td {
+            background: var(--surface-hover, rgba(255, 255, 255, .03));
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+        /* Panel layout (form + table side by side on large screens) */
+        .panel-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .panel-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+        }
+
+        .form-panel h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        /* Role badge */
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-professor {
+            background: rgba(99, 102, 241, .18);
+            color: #818cf8;
+        }
+
+        .badge-student {
+            background: rgba(34, 197, 94, .18);
+            color: #4ade80;
+        }
+
+        .badge-active {
+            background: rgba(34, 197, 94, .18);
+            color: #4ade80;
+        }
+
+        .badge-archived {
+            background: rgba(100, 116, 139, .18);
+            color: #94a3b8;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, .15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, .3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, .28);
+        }
+
+        .freeze-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+        }
+
+        .freeze-bar span {
+            flex: 1;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* Section header with action button */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Header -->
     <header class="header">
         <div class="container">
             <div class="header-content">
@@ -19,139 +213,316 @@
                     <div class="logo-icon">🏫</div>
                     <span class="logo-text">ClassTrack</span>
                 </div>
-
                 <div class="header-info">
                     <div class="time-display">
                         <div class="current-time" id="currentTime">--:--</div>
-                        <div class="current-slot" id="currentSlot">
-                            <span>Loading...</span>
-                        </div>
+                        <div class="current-slot" id="currentSlot"><span>Loading...</span></div>
                     </div>
-
                     <nav class="nav-links">
                         <a href="/" class="nav-link">Dashboard</a>
                         <a href="/admin" class="nav-link active">Admin</a>
                         <span class="user-indicator" id="userIndicator"></span>
-                        <button class="btn btn-secondary btn-sm" id="logoutBtn" onclick="logout()">Logout</button>
+                        <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
                     </nav>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
             <h1>🔧 Admin Panel</h1>
-            <p class="text-muted" style="margin-bottom: 2rem;">Manage classroom reservations and override room statuses.
-            </p>
 
-            <div class="admin-layout">
-                <!-- Create Reservation -->
-                <div class="admin-section">
-                    <h3>📅 New Reservation</h3>
-                    <form id="reservationForm">
-                        <div class="form-group">
-                            <label class="form-label">Room</label>
-                            <select class="form-select" id="resRoom" required>
-                                <option value="">Select a room...</option>
-                            </select>
-                        </div>
+            <!-- Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" onclick="switchTab('overview')">📊 Overview</button>
+                <button class="admin-tab-btn" onclick="switchTab('users')">👥 Users</button>
+                <button class="admin-tab-btn" onclick="switchTab('classes')">📚 Classes</button>
+                <button class="admin-tab-btn" onclick="switchTab('reservations')">📅 Reservations</button>
+                <button class="admin-tab-btn" onclick="switchTab('overrides')">🎛️ Room Overrides</button>
+            </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Date</label>
-                            <input type="date" class="form-input" id="resDate" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Time Slot</label>
-                            <select class="form-select" id="resSlot" required>
-                                <option value="">Select a slot...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Purpose</label>
-                            <input type="text" class="form-input" id="resPurpose" placeholder="e.g., Faculty Meeting"
-                                required>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Booked By</label>
-                            <input type="text" class="form-input" id="resBookedBy" placeholder="e.g., Prof. Smith"
-                                required>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">
-                            ✓ Create Reservation
-                        </button>
-                    </form>
-
-                    <div id="conflictAlert" class="hidden"
-                        style="margin-top: 1rem; padding: 1rem; background: var(--status-occupied-bg); border-radius: var(--radius-md); color: var(--status-occupied);">
-                        <strong>⚠️ Conflict:</strong> <span id="conflictMessage"></span>
+            <!-- ── Tab: Overview ── -->
+            <div id="tab-overview" class="admin-tab-pane active">
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-professors">—</div>
+                        <div class="stat-label">Professors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-students">—</div>
+                        <div class="stat-label">Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-courses">—</div>
+                        <div class="stat-label">Courses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-enrollments">—</div>
+                        <div class="stat-label">Enrollments</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-classrooms">—</div>
+                        <div class="stat-label">Classrooms</div>
                     </div>
                 </div>
 
-                <!-- Status Override -->
-                <div class="admin-section">
-                    <h3>🎛️ Status Override</h3>
-                    <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.875rem;">
-                        Manually override room status (e.g., for maintenance or emergency use).
-                    </p>
+                <div class="freeze-bar">
+                    <span>Enrollment Freeze — prevent students from enrolling in new courses</span>
+                    <span id="freezeStatus" style="font-size:0.85rem;color:var(--text-muted)">Checking...</span>
+                    <button class="btn btn-secondary btn-sm" id="freezeBtn" onclick="toggleFreeze()">Toggle</button>
+                </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Room</label>
-                        <select class="form-select" id="overrideRoom">
-                            <option value="">Select a room...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">New Status</label>
-                        <select class="form-select" id="overrideStatus">
-                            <option value="available">Available</option>
-                            <option value="occupied">Occupied</option>
-                            <option value="reserved">Reserved</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Duration (minutes)</label>
-                        <select class="form-select" id="overrideDuration">
-                            <option value="30">30 minutes</option>
-                            <option value="60">1 hour</option>
-                            <option value="120">2 hours</option>
-                            <option value="480">Full day</option>
-                        </select>
-                    </div>
-
-                    <button class="btn btn-primary" style="width: 100%;" onclick="applyOverride()">
-                        ⚡ Apply Override
-                    </button>
-
-                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;"
-                        onclick="clearOverride()">
-                        🔄 Clear Override
-                    </button>
+                <div class="table-wrap">
+                    <table class="data-table" id="enrollmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Professor</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enrollmentsTbody">
+                            <tr>
+                                <td colspan="5" style="text-align:center;color:var(--text-muted)">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Upcoming Reservations -->
-            <div class="admin-section" style="margin-top: 2rem;">
-                <h3>📋 Upcoming Reservations</h3>
-                <div id="reservationsTable">
-                    <div class="loading">
-                        <div class="spinner"></div>
+            <!-- ── Tab: Users ── -->
+            <div id="tab-users" class="admin-tab-pane">
+                <div class="panel-layout">
+                    <!-- Create User Form -->
+                    <div class="form-panel">
+                        <h3>➕ Add User</h3>
+                        <form id="createUserForm">
+                            <div class="form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-input" id="newFullName" placeholder="e.g. Dr. Jane Smith"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-input" id="newUsername" placeholder="e.g. jsmith"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="newEmail" placeholder="jane@campus.edu"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-input" id="newPassword"
+                                    placeholder="Min 6 characters" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" id="newRole" required>
+                                    <option value="professor">Professor</option>
+                                    <option value="student">Student</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">✓ Create User</button>
+                        </form>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div>
+                        <div class="section-header">
+                            <h3 style="margin:0">All Users</h3>
+                            <input type="text" class="form-input" id="userSearch" placeholder="Search..."
+                                style="width:180px" oninput="filterUsers()">
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Joined</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTbody">
+                                    <tr>
+                                        <td colspan="6" style="text-align:center;color:var(--text-muted)">Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Classes ── -->
+            <div id="tab-classes" class="admin-tab-pane">
+                <div class="panel-layout">
+                    <!-- Create Class Form -->
+                    <div class="form-panel">
+                        <h3>➕ Create Class</h3>
+                        <form id="createCourseForm">
+                            <div class="form-group">
+                                <label class="form-label">Course Code</label>
+                                <input type="text" class="form-input" id="courseCode" placeholder="e.g. CS301" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Course Name</label>
+                                <input type="text" class="form-input" id="courseName" placeholder="e.g. Data Structures"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Assign Professor</label>
+                                <select class="form-select" id="courseProfessor" required>
+                                    <option value="">Select professor...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Semester</label>
+                                <select class="form-select" id="courseSemester">
+                                    <option value="1">Semester 1</option>
+                                    <option value="2">Semester 2</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Max Capacity</label>
+                                <input type="number" class="form-input" id="courseCapacity" value="60" min="5"
+                                    max="300">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">✓ Create Class</button>
+                        </form>
+                    </div>
+
+                    <!-- Courses Table -->
+                    <div>
+                        <div class="section-header">
+                            <h3 style="margin:0">All Classes</h3>
+                            <input type="text" class="form-input" id="courseSearch" placeholder="Search..."
+                                style="width:180px" oninput="filterCourses()">
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Professor</th>
+                                        <th>Enrolled</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="coursesTbody">
+                                    <tr>
+                                        <td colspan="6" style="text-align:center;color:var(--text-muted)">Loading...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Reservations ── -->
+            <div id="tab-reservations" class="admin-tab-pane">
+                <div class="admin-layout">
+                    <div class="admin-section">
+                        <h3>📅 New Reservation</h3>
+                        <form id="reservationForm">
+                            <div class="form-group">
+                                <label class="form-label">Room</label>
+                                <select class="form-select" id="resRoom" required>
+                                    <option value="">Select a room...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-input" id="resDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Time Slot</label>
+                                <select class="form-select" id="resSlot" required>
+                                    <option value="">Select a slot...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Purpose</label>
+                                <input type="text" class="form-input" id="resPurpose"
+                                    placeholder="e.g., Faculty Meeting" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Booked By</label>
+                                <input type="text" class="form-input" id="resBookedBy" placeholder="e.g., Prof. Smith"
+                                    required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%">✓ Create
+                                Reservation</button>
+                        </form>
+                        <div id="conflictAlert" class="hidden"
+                            style="margin-top:1rem;padding:1rem;background:var(--status-occupied-bg);border-radius:var(--radius-md);color:var(--status-occupied);">
+                            <strong>⚠️ Conflict:</strong> <span id="conflictMessage"></span>
+                        </div>
+                    </div>
+                    <div class="admin-section">
+                        <h3>📋 Upcoming Reservations</h3>
+                        <div id="reservationsTable">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab: Room Overrides ── -->
+            <div id="tab-overrides" class="admin-tab-pane">
+                <div style="max-width:420px">
+                    <div class="admin-section">
+                        <h3>🎛️ Status Override</h3>
+                        <p class="text-muted" style="margin-bottom:1rem;font-size:0.875rem;">Manually override room
+                            status for maintenance or emergency use.</p>
+                        <div class="form-group">
+                            <label class="form-label">Room</label>
+                            <select class="form-select" id="overrideRoom">
+                                <option value="">Select a room...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Status</label>
+                            <select class="form-select" id="overrideStatus">
+                                <option value="available">Available</option>
+                                <option value="occupied">Occupied</option>
+                                <option value="reserved">Reserved</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration</label>
+                            <select class="form-select" id="overrideDuration">
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 hour</option>
+                                <option value="120">2 hours</option>
+                                <option value="480">Full day</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%" onclick="applyOverride()">⚡ Apply
+                            Override</button>
+                        <button class="btn btn-secondary" style="width:100%;margin-top:0.5rem"
+                            onclick="clearOverride()">🔄 Clear Override</button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
-
     <script src="/js/admin.js"></script>
 </body>
 

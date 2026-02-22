@@ -4,7 +4,7 @@ const AdminService = require('../services/adminService');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 const { hashPassword } = require('../services/authService');
-const { prepare } = require('../database/db');
+const { prepare, pool } = require('../database/db');
 
 // All admin routes require JWT + admin role
 router.use(requireAuth, requireRole('admin'));
@@ -70,7 +70,7 @@ router.get('/users', async (req, res) => {
     }
 });
 
-// POST /api/admin/users — create a professor or student
+// POST /api/admin/users — create a professor or student (admin only)
 router.post('/users', async (req, res) => {
     try {
         const { username, email, password, role, full_name } = req.body;
@@ -104,11 +104,103 @@ router.post('/users', async (req, res) => {
     }
 });
 
+// DELETE /api/admin/users/:id — remove a professor or student (admin only)
+router.delete('/users/:id', async (req, res) => {
+    try {
+        const user = await prepare('SELECT id, role FROM users WHERE id = $1').get(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.role === 'admin') return res.status(403).json({ error: 'Cannot delete an admin account' });
+
+        await prepare('DELETE FROM users WHERE id = $1').run(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/admin/courses
 router.get('/courses', async (req, res) => {
     try {
         const courses = await AdminService.getAllCourses();
         res.json(courses);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/admin/courses — admin creates a class and assigns it to a professor
+router.post('/courses', async (req, res) => {
+    try {
+        const { code, name, professor_id, semester, max_capacity, academic_year } = req.body;
+        if (!code || !name || !professor_id) {
+            return res.status(400).json({ error: 'code, name, and professor_id are required' });
+        }
+
+        // Verify professor exists and has correct role
+        const prof = await prepare('SELECT id FROM users WHERE id = $1 AND role = $2').get(professor_id, 'professor');
+        if (!prof) return res.status(404).json({ error: 'Professor not found' });
+
+        // Resolve academic year
+        const yearRow = await prepare("SELECT value FROM system_settings WHERE key = 'current_academic_year'").get();
+        const resolvedYear = academic_year || yearRow?.value || '2025-26';
+
+        try {
+            const result = await prepare(`
+                INSERT INTO courses (code, name, professor_id, academic_year, semester, max_capacity, status, auto_approve)
+                VALUES ($1, $2, $3, $4, $5, $6, 'active', true)
+                RETURNING id
+            `).run(code, name, professor_id, resolvedYear, semester || 1, max_capacity || 60);
+
+            res.status(201).json({
+                success: true,
+                course: { id: result.lastInsertRowid, code, name, professor_id, academic_year: resolvedYear }
+            });
+        } catch (e) {
+            if (e.message?.toLowerCase().includes('unique')) {
+                return res.status(409).json({ error: 'Course code already exists for this academic year' });
+            }
+            throw e;
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/admin/courses/:id — update course (reassign professor, change status, etc.)
+router.patch('/courses/:id', async (req, res) => {
+    try {
+        const { professor_id, name, status, max_capacity } = req.body;
+
+        const course = await prepare('SELECT * FROM courses WHERE id = $1').get(req.params.id);
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        if (professor_id) {
+            const prof = await prepare('SELECT id FROM users WHERE id = $1 AND role = $2').get(professor_id, 'professor');
+            if (!prof) return res.status(404).json({ error: 'Professor not found' });
+        }
+
+        await prepare(`
+            UPDATE courses SET
+                professor_id = COALESCE($1, professor_id),
+                name         = COALESCE($2, name),
+                status       = COALESCE($3, status),
+                max_capacity = COALESCE($4, max_capacity)
+            WHERE id = $5
+        `).run(professor_id || null, name || null, status || null, max_capacity || null, req.params.id);
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/admin/courses/:id
+router.delete('/courses/:id', async (req, res) => {
+    try {
+        const course = await prepare('SELECT id FROM courses WHERE id = $1').get(req.params.id);
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+        await prepare('DELETE FROM courses WHERE id = $1').run(req.params.id);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
