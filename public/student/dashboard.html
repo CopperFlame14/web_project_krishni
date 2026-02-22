@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(167, 139, 250, 0.15);
+            color: #a78bfa;
+        }
+
+        .nav-item .icon {
+            font-size: 1.1rem;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-info {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #a78bfa;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .notif-btn {
+            position: relative;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: #fff;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #a78bfa;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .timetable-item {
+            padding: 10px 12px;
+            background: rgba(167, 139, 250, 0.1);
+            border-left: 3px solid #a78bfa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .timetable-time {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .timetable-subject {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .timetable-faculty {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .enroll-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .enroll-item:last-child {
+            border-bottom: none;
+        }
+
+        .subject-code {
+            background: rgba(108, 99, 255, 0.2);
+            color: #a78bfa;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .empty {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/student" class="nav-item active"><span class="icon">🏠</span> Dashboard</a>
+        <a href="/student/timetable" class="nav-item"><span class="icon">📅</span> My Timetable</a>
+        <a href="/student/notifications" class="nav-item"><span class="icon">🔔</span> Notifications</a>
+        <a href="/api/classrooms" class="nav-item" target="_blank"><span class="icon">🏛️</span> Room Availability</a>
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-name" id="sidebar-name">Loading...</div>
+                <div class="user-role">🎓 Student</div>
+            </div>
+            <button class="logout-btn" onclick="API.logout()">Sign Out</button>
+        </div>
+    </nav>
+    <main class="main">
+        <div class="topbar">
+            <div class="page-title">Dashboard</div>
+            <a href="/student/notifications" class="notif-btn">
+                🔔 Notifications
+                <span class="notif-badge" id="notif-badge"></span>
+            </a>
+        </div>
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-enrollments">–</div>
+                <div class="stat-label">Enrolled Subjects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-notifs">–</div>
+                <div class="stat-label">Unread Notifications</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-today">–</div>
+                <div class="stat-label">Classes Today</div>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="panel">
+                <div class="section-title">📅 Today's Schedule</div>
+                <div id="today-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="section-title">📚 My Enrollments</div>
+                <div id="enroll-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/js/api.js"></script>
+    <script src="/js/wsClient.js"></script>
+    <script>
+        if (!API.requireAuth('student')) { }
+        const user = API.getUser();
+        if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
+        WS.connect();
+
+        async function loadDashboard() {
+            const data = await API.get('/api/student/dashboard');
+            if (!data) return;
+            document.getElementById('stat-enrollments').textContent = data.stats.enrollments;
+            document.getElementById('stat-notifs').textContent = data.stats.unreadNotifications;
+            document.getElementById('stat-today').textContent = data.todayTimetable.length;
+            const badge = document.getElementById('notif-badge');
+            if (data.stats.unreadNotifications > 0) { badge.textContent = data.stats.unreadNotifications; badge.style.display = 'flex'; }
+
+            const todayList = document.getElementById('today-list');
+            if (data.todayTimetable.length === 0) {
+                todayList.innerHTML = '<div class="empty">No classes today</div>';
+            } else {
+                todayList.innerHTML = data.todayTimetable.map(t => `
+                    <div class="timetable-item">
+                        <div class="timetable-time">${t.slot_label || ''} ${t.start_time ? `(${t.start_time}–${t.end_time})` : ''}</div>
+                        <div class="timetable-subject">${t.subject_name}</div>
+                        <div class="timetable-faculty">${t.faculty_name || ''} ${t.room_id ? '· Room ' + t.room_id : ''}</div>
+                    </div>`).join('');
+            }
+
+            const enrollList = document.getElementById('enroll-list');
+            if (data.enrollments.length === 0) {
+                enrollList.innerHTML = '<div class="empty">No enrollments yet. <a href="/student/timetable" style="color:#a78bfa">Enroll now</a></div>';
+            } else {
+                enrollList.innerHTML = data.enrollments.map(e => `
+                    <div class="enroll-item">
+                        <div><span class="subject-code">${e.subject_code}</span> <span style="margin-left:8px;font-size:0.9rem">${e.subject_name}</span></div>
+                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">${e.professor_name}</div>
+                    </div>`).join('');
+            }
+        }
+        loadDashboard();
+    </script>
+</body>
+
+</html>

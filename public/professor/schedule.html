@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Class – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #6c63ff;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(108, 99, 255, 0.15);
+            color: #6c63ff;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-info {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #6c63ff;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+            max-width: 900px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+        }
+
+        .stepper {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+        }
+
+        .step {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            position: relative;
+        }
+
+        .step:first-child {
+            border-radius: 10px 0 0 10px;
+        }
+
+        .step:last-child {
+            border-radius: 0 10px 10px 0;
+        }
+
+        .step.active {
+            background: rgba(108, 99, 255, 0.2);
+            border-color: #6c63ff;
+            color: #fff;
+        }
+
+        .step.done {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .step-num {
+            font-weight: 700;
+            display: block;
+            font-size: 1rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        .select-card {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .select-card:hover {
+            border-color: rgba(108, 99, 255, 0.5);
+            background: rgba(108, 99, 255, 0.1);
+        }
+
+        .select-card.selected {
+            border-color: #6c63ff;
+            background: rgba(108, 99, 255, 0.2);
+        }
+
+        .select-card .card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .select-card .card-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .select-card .card-sub {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+        }
+
+        .room-card {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .room-card:hover {
+            border-color: rgba(108, 99, 255, 0.5);
+        }
+
+        .room-card.selected {
+            border-color: #6c63ff;
+            background: rgba(108, 99, 255, 0.15);
+        }
+
+        .room-card.occupied {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .room-id {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .room-status {
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .status-available {
+            color: #6ee7b7;
+        }
+
+        .status-occupied {
+            color: #fca5a5;
+        }
+
+        .status-reserved {
+            color: #fcd34d;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        select option {
+            background: #1a1a2e;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #6c63ff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #6c63ff, #a78bfa);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .msg {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .msg.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .msg.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .summary-box {
+            background: rgba(108, 99, 255, 0.1);
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.9rem;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .summary-val {
+            font-weight: 600;
+        }
+
+        .empty {
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/professor" class="nav-item"><span>🏠</span> Dashboard</a>
+        <a href="/professor/schedule" class="nav-item active"><span>📅</span> Schedule Class</a>
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-name" id="sidebar-name">Loading...</div>
+                <div class="user-role">👨‍🏫 Professor</div>
+            </div>
+            <button class="logout-btn" onclick="API.logout()">Sign Out</button>
+        </div>
+    </nav>
+    <main class="main">
+        <div class="page-title">📅 Schedule a Class</div>
+        <div class="stepper">
+            <div class="step active" id="step-1"><span class="step-num">1</span>Block</div>
+            <div class="step" id="step-2"><span class="step-num">2</span>Floor</div>
+            <div class="step" id="step-3"><span class="step-num">3</span>Room</div>
+            <div class="step" id="step-4"><span class="step-num">4</span>Details</div>
+            <div class="step" id="step-5"><span class="step-num">5</span>Confirm</div>
+        </div>
+
+        <!-- Step 1: Block -->
+        <div id="panel-1" class="panel">
+            <div class="section-title">Select Academic Block</div>
+            <div class="grid" id="blocks-grid">
+                <div class="empty">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Step 2: Floor -->
+        <div id="panel-2" class="panel" style="display:none">
+            <div class="section-title">Select Floor</div>
+            <div class="grid" id="floors-grid"></div>
+        </div>
+
+        <!-- Step 3: Room -->
+        <div id="panel-3" class="panel" style="display:none">
+            <div class="section-title">Select Available Room <span
+                    style="font-size:0.8rem;color:rgba(255,255,255,0.4);font-weight:400" id="room-date-label"></span>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem">
+                <label>Date</label>
+                <input type="date" id="class-date" onchange="loadRooms()">
+            </div>
+            <div class="grid" id="rooms-grid"></div>
+        </div>
+
+        <!-- Step 4: Details -->
+        <div id="panel-4" class="panel" style="display:none">
+            <div class="section-title">Class Details</div>
+            <div class="form-group">
+                <label>Subject</label>
+                <select id="subject-select">
+                    <option value="">-- Select subject (optional) --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Time Slot</label>
+                <select id="slot-select">
+                    <option value="">Loading slots...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <textarea id="notes" rows="3" placeholder="Any notes for students..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px">
+                <button class="btn-outline" onclick="goStep(3)">← Back</button>
+                <button class="btn" onclick="reviewBooking()">Review →</button>
+            </div>
+        </div>
+
+        <!-- Step 5: Confirm -->
+        <div id="panel-5" class="panel" style="display:none">
+            <div class="section-title">Confirm Booking</div>
+            <div class="summary-box" id="summary-box"></div>
+            <div class="msg" id="schedule-msg"></div>
+            <div style="display:flex;gap:10px;margin-top:1.5rem">
+                <button class="btn-outline" onclick="goStep(4)">← Back</button>
+                <button class="btn" id="confirm-btn" onclick="scheduleClass()">✓ Schedule Class</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/wsClient.js"></script>
+    <script>
+        if (!API.requireAuth('professor')) { }
+        const user = API.getUser();
+        if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
+        WS.connect();
+
+        let sel = { block: null, floor: null, room: null, slotId: null, subjectId: null, date: null };
+
+        // Set min date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('class-date').min = today;
+        document.getElementById('class-date').value = today;
+
+        function goStep(n) {
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`panel-${i}`).style.display = i === n ? 'block' : 'none';
+                const stepEl = document.getElementById(`step-${i}`);
+                stepEl.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+            }
+            if (n === 5) buildSummary();
+        }
+
+        async function loadBlocks() {
+            const blocks = await API.get('/api/blocks');
+            if (!blocks) return;
+            const icons = { A: '🔬', B: '🎨', C: '⚙️', D: '📊' };
+            document.getElementById('blocks-grid').innerHTML = blocks.map(b => `
+                <div class="select-card" onclick="selectBlock(${b.id}, '${b.name}', this)">
+                    <div class="card-icon">${icons[b.name] || '🏛️'}</div>
+                    <div class="card-label">Block ${b.name}</div>
+                    <div class="card-sub">${b.label || ''}</div>
+                </div>`).join('');
+        }
+
+        async function selectBlock(id, name, el) {
+            sel.block = { id, name };
+            document.querySelectorAll('#blocks-grid .select-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            const data = await API.get(`/api/blocks/${id}/floors`);
+            if (!data) return;
+            document.getElementById('floors-grid').innerHTML = data.floors.map(f => `
+                <div class="select-card" onclick="selectFloor(${f.id}, ${f.number}, this)">
+                    <div class="card-icon">🏢</div>
+                    <div class="card-label">Floor ${f.number}</div>
+                    <div class="card-sub">${f.label || ''}</div>
+                </div>`).join('');
+            goStep(2);
+        }
+
+        function selectFloor(id, num, el) {
+            sel.floor = { id, num };
+            document.querySelectorAll('#floors-grid .select-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            goStep(3);
+            loadRooms();
+        }
+
+        async function loadRooms() {
+            if (!sel.floor) return;
+            sel.date = document.getElementById('class-date').value;
+            document.getElementById('room-date-label').textContent = `for ${sel.date}`;
+            const data = await API.get(`/api/classrooms/floor/${sel.floor.id}?date=${sel.date}`);
+            if (!data) return;
+            document.getElementById('rooms-grid').innerHTML = data.rooms.map(r => {
+                const avail = r.currentStatus === 'available';
+                return `<div class="room-card ${avail ? '' : 'occupied'}" onclick="${avail ? `selectRoom('${r.id}', this)` : ''}">
+                    <div class="room-id">${r.id}</div>
+                    <div class="room-status status-${r.currentStatus}">${r.currentStatus}</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:2px">Cap: ${r.capacity}</div>
+                </div>`;
+            }).join('') || '<div class="empty">No rooms found</div>';
+        }
+
+        async function selectRoom(id, el) {
+            sel.room = id;
+            document.querySelectorAll('#rooms-grid .room-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            // Load slots and subjects for step 4
+            const [slots, subjects] = await Promise.all([
+                API.get(`/api/classrooms/${id}/slots?date=${sel.date}`),
+                API.get('/api/professor/subjects')
+            ]);
+            if (slots) {
+                document.getElementById('slot-select').innerHTML = slots
+                    .filter(s => s.isAvailable)
+                    .map(s => `<option value="${s.id}">${s.label} (${s.start_time}–${s.end_time})</option>`)
+                    .join('') || '<option value="">No available slots</option>';
+            }
+            if (subjects) {
+                document.getElementById('subject-select').innerHTML =
+                    '<option value="">-- Select subject (optional) --</option>' +
+                    subjects.map(s => `<option value="${s.id}">${s.code} – ${s.name}</option>`).join('');
+            }
+            goStep(4);
+        }
+
+        function reviewBooking() {
+            const slotVal = document.getElementById('slot-select').value;
+            if (!slotVal) {
+                alert('Please select a time slot before proceeding.');
+                return;
+            }
+            sel.slotId = parseInt(slotVal);
+            sel.subjectId = document.getElementById('subject-select').value
+                ? parseInt(document.getElementById('subject-select').value)
+                : null;
+            goStep(5);
+        }
+
+        function buildSummary() {
+            const slotText = document.getElementById('slot-select').selectedOptions[0]?.text || '–';
+            const subjectText = document.getElementById('subject-select').selectedOptions[0]?.text || 'None';
+            document.getElementById('summary-box').innerHTML = `
+                <div class="summary-row"><span class="summary-label">Block</span><span class="summary-val">Block ${sel.block?.name}</span></div>
+                <div class="summary-row"><span class="summary-label">Floor</span><span class="summary-val">Floor ${sel.floor?.num}</span></div>
+                <div class="summary-row"><span class="summary-label">Room</span><span class="summary-val">${sel.room}</span></div>
+                <div class="summary-row"><span class="summary-label">Date</span><span class="summary-val">${sel.date}</span></div>
+                <div class="summary-row"><span class="summary-label">Slot</span><span class="summary-val">${slotText}</span></div>
+                <div class="summary-row"><span class="summary-label">Subject</span><span class="summary-val">${subjectText}</span></div>
+                <div class="summary-row"><span class="summary-label">Notes</span><span class="summary-val">${document.getElementById('notes').value || '–'}</span></div>
+            `;
+        }
+
+        async function scheduleClass() {
+            const btn = document.getElementById('confirm-btn');
+            const msg = document.getElementById('schedule-msg');
+            msg.style.display = 'none';
+
+            if (!sel.slotId || !sel.room || !sel.date) {
+                msg.className = 'msg error';
+                msg.textContent = 'Missing required fields. Please go back and complete all steps.';
+                msg.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true; btn.textContent = 'Scheduling...';
+            const { ok, data } = await API.post('/api/professor/classes', {
+                roomId: sel.room,
+                slotId: sel.slotId,
+                date: sel.date,
+                subjectId: sel.subjectId || null,
+                notes: document.getElementById('notes').value
+            });
+            if (ok) {
+                msg.className = 'msg success';
+                msg.textContent = `✓ Class scheduled in Room ${data.class.room_id} on ${data.class.date}. Students have been notified.`;
+                msg.style.display = 'block';
+                btn.textContent = '✓ Scheduled!';
+                setTimeout(() => { window.location.href = '/professor'; }, 2000);
+            } else {
+                msg.className = 'msg error';
+                msg.textContent = data.error || 'Scheduling failed';
+                msg.style.display = 'block';
+                btn.disabled = false; btn.textContent = '✓ Schedule Class';
+            }
+        }
+
+        loadBlocks();
+    </script>
+</body>
+
+</html>

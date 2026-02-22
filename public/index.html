@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Availability Tracker</title>
+    <meta name="description"
+        content="Real-time classroom availability tracker for college campuses. Find available rooms instantly.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🏫</div>
+                    <span class="logo-text">ClassTrack</span>
+                </div>
+
+                <div class="header-info">
+                    <div class="time-display">
+                        <div class="current-time" id="currentTime">--:--</div>
+                        <div class="current-slot" id="currentSlot">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+
+                    <nav class="nav-links">
+                        <a href="/" class="nav-link active">Dashboard</a>
+                        <a href="/admin" class="nav-link">Admin</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Bar -->
+            <section class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-icon total">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statTotal">--</div>
+                        <div class="stat-label">Total Classrooms</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon available">✓</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statAvailable">--</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon occupied">✗</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statOccupied">--</div>
+                        <div class="stat-label">Occupied</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon reserved">⏳</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statReserved">--</div>
+                        <div class="stat-label">Reserved</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filters -->
+            <section class="filters-section">
+                <div class="filters-row">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search rooms (e.g., A101, B202)...">
+                    </div>
+                    <div class="filter-group">
+                        <input type="date" id="filterDate" class="filter-select">
+                    </div>
+                    <select class="filter-select" id="filterBlock">
+                        <option value="">All Blocks</option>
+                        <option value="A">Block A</option>
+                        <option value="B">Block B</option>
+                        <option value="C">Block C</option>
+                        <option value="D">Block D</option>
+                    </select>
+                    <select class="filter-select" id="filterFloor">
+                        <option value="">All Floors</option>
+                        <option value="0">Ground Floor</option>
+                        <option value="1">1st Floor</option>
+                        <option value="2">2nd Floor</option>
+                    </select>
+                    <select class="filter-select" id="filterCapacity">
+                        <option value="">Any Capacity</option>
+                        <option value="30">30+ seats</option>
+                        <option value="50">50+ seats</option>
+                        <option value="70">70+ seats</option>
+                        <option value="100">100+ seats</option>
+                    </select>
+                    <select class="filter-select" id="filterStatus">
+                        <option value="">All Status</option>
+                        <option value="available">Available Only</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="reserved">Reserved</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Rooms Grid -->
+            <section id="roomsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- QR Modal -->
+    <div class="modal-overlay" id="qrModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📱 Room QR Code</h3>
+                <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="qr-display">
+                <div class="qr-code">
+                    <img id="qrImage" src="" alt="QR Code" width="250">
+                </div>
+                <p id="qrRoomId" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;"></p>
+                <p class="text-muted">Scan to check room availability</p>
+                <button class="btn btn-primary" id="downloadQR" style="margin-top: 1rem;">
+                    📥 Download QR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+
+</html>

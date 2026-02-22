@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - ClassTrack</title>
+    <meta name="description" content="Admin panel for managing classroom reservations and status overrides.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🏫</div>
+                    <span class="logo-text">ClassTrack</span>
+                </div>
+
+                <div class="header-info">
+                    <div class="time-display">
+                        <div class="current-time" id="currentTime">--:--</div>
+                        <div class="current-slot" id="currentSlot">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+
+                    <nav class="nav-links">
+                        <a href="/" class="nav-link">Dashboard</a>
+                        <a href="/admin" class="nav-link active">Admin</a>
+                        <span class="user-indicator" id="userIndicator"></span>
+                        <button class="btn btn-secondary btn-sm" id="logoutBtn" onclick="logout()">Logout</button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <h1>🔧 Admin Panel</h1>
+            <p class="text-muted" style="margin-bottom: 2rem;">Manage classroom reservations and override room statuses.
+            </p>
+
+            <div class="admin-layout">
+                <!-- Create Reservation -->
+                <div class="admin-section">
+                    <h3>📅 New Reservation</h3>
+                    <form id="reservationForm">
+                        <div class="form-group">
+                            <label class="form-label">Room</label>
+                            <select class="form-select" id="resRoom" required>
+                                <option value="">Select a room...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-input" id="resDate" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Time Slot</label>
+                            <select class="form-select" id="resSlot" required>
+                                <option value="">Select a slot...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Purpose</label>
+                            <input type="text" class="form-input" id="resPurpose" placeholder="e.g., Faculty Meeting"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Booked By</label>
+                            <input type="text" class="form-input" id="resBookedBy" placeholder="e.g., Prof. Smith"
+                                required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            ✓ Create Reservation
+                        </button>
+                    </form>
+
+                    <div id="conflictAlert" class="hidden"
+                        style="margin-top: 1rem; padding: 1rem; background: var(--status-occupied-bg); border-radius: var(--radius-md); color: var(--status-occupied);">
+                        <strong>⚠️ Conflict:</strong> <span id="conflictMessage"></span>
+                    </div>
+                </div>
+
+                <!-- Status Override -->
+                <div class="admin-section">
+                    <h3>🎛️ Status Override</h3>
+                    <p class="text-muted" style="margin-bottom: 1rem; font-size: 0.875rem;">
+                        Manually override room status (e.g., for maintenance or emergency use).
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label">Room</label>
+                        <select class="form-select" id="overrideRoom">
+                            <option value="">Select a room...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">New Status</label>
+                        <select class="form-select" id="overrideStatus">
+                            <option value="available">Available</option>
+                            <option value="occupied">Occupied</option>
+                            <option value="reserved">Reserved</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Duration (minutes)</label>
+                        <select class="form-select" id="overrideDuration">
+                            <option value="30">30 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="120">2 hours</option>
+                            <option value="480">Full day</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%;" onclick="applyOverride()">
+                        ⚡ Apply Override
+                    </button>
+
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;"
+                        onclick="clearOverride()">
+                        🔄 Clear Override
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upcoming Reservations -->
+            <div class="admin-section" style="margin-top: 2rem;">
+                <h3>📋 Upcoming Reservations</h3>
+                <div id="reservationsTable">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/js/admin.js"></script>
+</body>
+
+</html>

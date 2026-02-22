@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Dashboard – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #6c63ff;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(108, 99, 255, 0.15);
+            color: #6c63ff;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-info {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #6c63ff;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #6c63ff, #a78bfa);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #6c63ff;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .class-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid #6c63ff;
+        }
+
+        .class-subject {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .class-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+
+        .class-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-sm {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cancel {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(239, 68, 68, 0.35);
+        }
+
+        .subject-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .subject-item:last-child {
+            border-bottom: none;
+        }
+
+        .subject-code {
+            background: rgba(108, 99, 255, 0.2);
+            color: #a78bfa;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .empty {
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .status-scheduled {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .status-cancelled {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/professor" class="nav-item active"><span>🏠</span> Dashboard</a>
+        <a href="/professor/schedule" class="nav-item"><span>📅</span> Schedule Class</a>
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-name" id="sidebar-name">Loading...</div>
+                <div class="user-role">👨‍🏫 Professor</div>
+            </div>
+            <button class="logout-btn" onclick="API.logout()">Sign Out</button>
+        </div>
+    </nav>
+    <main class="main">
+        <div class="topbar">
+            <div class="page-title">Dashboard</div>
+            <a href="/professor/schedule" class="btn">+ Schedule Class</a>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-today">–</div>
+                <div class="stat-label">Classes Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">–</div>
+                <div class="stat-label">Total Scheduled</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-subjects">–</div>
+                <div class="stat-label">My Subjects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-students">–</div>
+                <div class="stat-label">Enrolled Students</div>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="panel">
+                <div class="section-title">📅 Upcoming Classes <span
+                        style="font-size:0.8rem;color:rgba(255,255,255,0.4);font-weight:400">Next 7 days</span></div>
+                <div id="classes-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="section-title">📚 My Subjects</div>
+                <div id="subjects-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/js/api.js"></script>
+    <script src="/js/wsClient.js"></script>
+    <script>
+        if (!API.requireAuth('professor')) { }
+        const user = API.getUser();
+        if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
+        WS.connect();
+
+        async function loadDashboard() {
+            const [dash, classes, subjects] = await Promise.all([
+                API.get('/api/professor/dashboard'),
+                API.get('/api/professor/classes?status=scheduled'),
+                API.get('/api/professor/subjects')
+            ]);
+            if (dash) {
+                document.getElementById('stat-today').textContent = dash.stats.todayClasses;
+                document.getElementById('stat-total').textContent = dash.stats.totalScheduled;
+                document.getElementById('stat-subjects').textContent = dash.stats.subjects;
+                document.getElementById('stat-students').textContent = dash.stats.enrolledStudents;
+            }
+            if (classes) {
+                const upcoming = classes.slice(0, 10);
+                document.getElementById('classes-list').innerHTML = upcoming.length === 0
+                    ? '<div class="empty">No upcoming classes. <a href="/professor/schedule" style="color:#6c63ff">Schedule one</a></div>'
+                    : upcoming.map(c => `
+                        <div class="class-item">
+                            <div class="class-subject">${c.subject_name || 'Class'} <span class="status-badge status-${c.status}">${c.status}</span></div>
+                            <div class="class-meta">📍 Room ${c.room_id} · ${c.date} · ${c.slot_label || c.start_time}</div>
+                            <div class="class-actions">
+                                <button class="btn-sm btn-cancel" onclick="cancelClass(${c.id})">Cancel</button>
+                            </div>
+                        </div>`).join('');
+            }
+            if (subjects) {
+                document.getElementById('subjects-list').innerHTML = subjects.length === 0
+                    ? '<div class="empty">No subjects yet</div>'
+                    : subjects.map(s => `
+                        <div class="subject-item">
+                            <div><span class="subject-code">${s.code}</span> <span style="margin-left:8px;font-size:0.9rem">${s.name}</span></div>
+                        </div>`).join('');
+            }
+        }
+
+        async function cancelClass(id) {
+            if (!confirm('Cancel this class? Enrolled students will be notified.')) return;
+            const { ok, data } = await API.delete(`/api/professor/classes/${id}`);
+            if (ok) { loadDashboard(); }
+            else alert(data.error || 'Failed to cancel');
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

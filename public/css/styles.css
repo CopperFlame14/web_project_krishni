@@ -1,0 +1,692 @@
+/* ===========================
+   GLOSSY BLACK DESIGN SYSTEM (Piano Black)
+   =========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Colors */
+    --bg-body: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+
+    /* Accents (Subtle text gradients are okay, but keep UI monochrome mostly) */
+    --accent: #fff;
+
+    /* Semantic Colors (Vibrant but small area) */
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+
+    /* Borders & Shadows */
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --border-highlight: rgba(255, 255, 255, 0.2);
+
+    --gleam: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    --shadow-gloss: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+    /* Radii */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-pill: 9999px;
+}
+
+/* ===========================
+   RESET & BASE
+   =========================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+    /* Subtle mesh gradient for depth */
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(25, 25, 25, 0.4) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(30, 30, 30, 0.4) 0%, transparent 25%);
+}
+
+a {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+a:hover {
+    opacity: 0.7;
+}
+
+/* ===========================
+   LAYOUT
+   =========================== */
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.main-content {
+    padding: 3rem 0;
+}
+
+/* ===========================
+   HEADER
+   =========================== */
+
+.header {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    background: var(--bg-gloss);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-gloss), var(--gleam);
+}
+
+.logo-text {
+    font-weight: 700;
+    font-size: 1.25rem;
+    background: linear-gradient(to right, #fff, #999);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.time-display {
+    text-align: right;
+}
+
+.current-time {
+    font-weight: 700;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.current-slot span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.nav-links {
+    background: #111;
+    border: 1px solid var(--border-subtle);
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    display: flex;
+    gap: 4px;
+}
+
+.nav-link {
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.nav-link.active {
+    background: #333;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), var(--gleam);
+}
+
+.user-indicator {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+/* ===========================
+   STATS (Glossy Cards)
+   =========================== */
+
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    background: #0a0a0a;
+    background-image: var(--bg-gloss);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: var(--shadow-gloss);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(180deg, #fff, #888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* ===========================
+   NEW FILTER FORMAT (Control Deck)
+   =========================== */
+
+/* We'll restyle the filter section to look like a floating control bar */
+.filters-section {
+    position: sticky;
+    top: 80px;
+    /* Below header */
+    z-index: 90;
+    margin-bottom: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.filters-row {
+    background: #000;
+    /* Pure black core */
+    background-image: linear-gradient(to bottom, #111, #050505);
+    border: 1px solid var(--border-subtle);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), var(--gleam);
+    max-width: 100%;
+}
+
+.search-box {
+    margin-right: 1rem;
+    position: relative;
+    min-width: 250px;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+.form-input,
+.form-select {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-family: inherit;
+}
+
+.search-box input {
+    padding-left: 2.25rem;
+    width: 100%;
+    border-radius: var(--radius-pill);
+}
+
+.search-box::before {
+    content: '🔍';
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+.filter-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+    cursor: pointer;
+    min-width: 130px;
+}
+
+input:focus,
+select:focus {
+    border-color: #666;
+    background: #222;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+/* ===========================
+   ROOM GRID (Glossy Tiles)
+   =========================== */
+
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.room-card {
+    background: #0a0a0a;
+    background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+}
+
+.room-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    pointer-events: none;
+}
+
+.room-card:hover {
+    transform: translateY(-4px);
+    background: #111;
+    border-color: #333;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.room-id {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Minimalist Status Dots */
+.room-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-pill);
+    background: #000;
+    border: 1px solid #222;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.room-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.room-status.available {
+    color: var(--success);
+}
+
+.room-status.available::before {
+    background: var(--success);
+}
+
+.room-status.occupied {
+    color: var(--danger);
+}
+
+.room-status.occupied::before {
+    background: var(--danger);
+}
+
+.room-status.reserved {
+    color: var(--warning);
+}
+
+.room-status.reserved::before {
+    background: var(--warning);
+}
+
+.room-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.room-detail {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.room-reason {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-height: 1.5em;
+}
+
+.room-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.room-card:hover .room-actions {
+    opacity: 1;
+}
+
+.btn {
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #fff;
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: #e5e5e5;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: #222;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+.btn-secondary:hover {
+    background: #333;
+    border-color: #444;
+}
+
+/* ===========================
+   ADMIN & DETAILS
+   =========================== */
+
+.admin-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.admin-section {
+    background: #0a0a0a;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.reservations-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reservations-table th {
+    text-align: left;
+    padding: 1rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.reservations-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.reservations-table tr:hover td {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ===========================
+   TOAST & MODAL
+   =========================== */
+
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s var(--ease-elastic);
+    z-index: 2000;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.modal-overlay.active {
+    background: rgba(0, 0, 0, 0.8);
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 2rem;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 50px #000;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .stats-bar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .search-box {
+        width: 100%;
+        margin: 0;
+    }
+
+    .filters-section {
+        position: relative;
+        top: 0;
+    }
+
+    .admin-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Extra Tweaks needed for HTML structure compatibility */
+/* The filter logic expects inputs to be there. I've styled them. */
+
+/* ===========================
+   SCHEDULE GRID (Timetable)
+   =========================== */
+
+.schedule-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.schedule-item {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.schedule-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+}
+
+.schedule-item.current {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.schedule-item.current::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--success);
+}
+
+.schedule-time {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.9rem;
+    color: #fff;
+    text-align: right;
+    line-height: 1.2;
+    padding-right: 1rem;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.schedule-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.schedule-subject {
+    font-weight: 600;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.schedule-faculty {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Status Badges in Schedule (Overrides/Tweaks) */
+.schedule-item .room-status {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+}

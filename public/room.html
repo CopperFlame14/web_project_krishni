@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Details - ClassTrack</title>
+    <meta name="description" content="View detailed information and schedule for this classroom.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="/" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+                        <div class="logo-icon">🏫</div>
+                        <span class="logo-text">ClassTrack</span>
+                    </a>
+                </div>
+
+                <div class="header-info">
+                    <div class="time-display">
+                        <div class="current-time" id="currentTime">--:--</div>
+                        <div class="current-slot" id="currentSlot">
+                            <span>Loading...</span>
+                        </div>
+                    </div>
+
+                    <nav class="nav-links">
+                        <a href="/" class="nav-link">Dashboard</a>
+                        <a href="/admin" class="nav-link">Admin</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Room Content -->
+            <div id="roomContent" class="hidden">
+                <!-- Hero Section -->
+                <div class="room-hero" id="roomHero">
+                    <div class="room-hero-id" id="roomId">--</div>
+                    <div class="room-hero-status" id="roomStatus">
+                        Loading...
+                    </div>
+                    <p id="roomReason" style="margin-top: 1rem; color: var(--text-secondary);">--</p>
+
+                    <div
+                        style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                        <div class="room-detail"
+                            style="padding: 0.5rem 1rem; background: var(--bg-glass); border-radius: var(--radius-full);">
+                            🏢 <span id="roomBlock">Block --</span>
+                        </div>
+                        <div class="room-detail"
+                            style="padding: 0.5rem 1rem; background: var(--bg-glass); border-radius: var(--radius-full);">
+                            🏠 <span id="roomFloor">Floor --</span>
+                        </div>
+                        <div class="room-detail"
+                            style="padding: 0.5rem 1rem; background: var(--bg-glass); border-radius: var(--radius-full);">
+                            👥 <span id="roomCapacity">-- seats</span>
+                        </div>
+                    </div>
+
+                    <div id="roomAmenities"
+                        style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                    </div>
+                </div>
+
+                <!-- Layout Grid -->
+                <div class="admin-layout">
+                    <!-- Today's Schedule -->
+                    <div class="admin-section">
+                        <h3>📅 Today's Schedule</h3>
+                        <div id="todaySchedule" class="schedule-grid">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR Code -->
+                    <div class="admin-section">
+                        <h3>📱 QR Code</h3>
+                        <div class="qr-display">
+                            <div class="qr-code">
+                                <img id="qrImage" src="" alt="QR Code" width="200">
+                            </div>
+                            <p class="text-muted">Scan to check live availability</p>
+                            <button class="btn btn-primary" id="downloadQR" style="margin-top: 1rem;">
+                                📥 Download QR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="empty-state hidden">
+                <div class="empty-state-icon">🚫</div>
+                <h3>Room Not Found</h3>
+                <p>The requested classroom does not exist.</p>
+                <a href="/" class="btn btn-primary" style="margin-top: 1rem;">Back to Dashboard</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/room.js"></script>
+</body>
+
+</html>

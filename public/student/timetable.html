@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Timetable – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(167, 139, 250, 0.15);
+            color: #a78bfa;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-info {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #a78bfa;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: #a78bfa;
+            color: #a78bfa;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(167, 139, 250, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: #a78bfa;
+            background: rgba(167, 139, 250, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .upload-hint {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #6c63ff, #a78bfa);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            border-radius: 10px;
+            color: #a78bfa;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .msg {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .msg.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .msg.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .day-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .day-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #a78bfa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .tt-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            margin-bottom: 6px;
+        }
+
+        .tt-time {
+            min-width: 80px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            padding-top: 2px;
+        }
+
+        .tt-subject {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .tt-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+        }
+
+        .empty {
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .csv-template {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .csv-template code {
+            color: #a78bfa;
+            font-family: monospace;
+        }
+
+        .enroll-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .subject-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .subject-card .code {
+            color: #a78bfa;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .subject-card .name {
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .subject-card .prof {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .enroll-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            background: rgba(108, 99, 255, 0.2);
+            border: 1px solid rgba(108, 99, 255, 0.4);
+            border-radius: 8px;
+            color: #a78bfa;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .enroll-btn:hover {
+            background: rgba(108, 99, 255, 0.35);
+        }
+
+        .enroll-btn.enrolled {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+            cursor: default;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/student" class="nav-item"><span>🏠</span> Dashboard</a>
+        <a href="/student/timetable" class="nav-item active"><span>📅</span> My Timetable</a>
+        <a href="/student/notifications" class="nav-item"><span>🔔</span> Notifications</a>
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-name" id="sidebar-name">Loading...</div>
+                <div class="user-role">🎓 Student</div>
+            </div>
+            <button class="logout-btn" onclick="API.logout()">Sign Out</button>
+        </div>
+    </nav>
+    <main class="main">
+        <div class="topbar">
+            <div class="page-title">My Timetable</div>
+        </div>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('timetable')">📅 Timetable</div>
+            <div class="tab" onclick="showTab('upload')">⬆️ Upload CSV</div>
+            <div class="tab" onclick="showTab('enroll')">📚 Enrollments</div>
+            <div class="tab" onclick="showTab('rescheduled')">🔄 Rescheduled</div>
+        </div>
+
+        <!-- Timetable View -->
+        <div id="tab-timetable">
+            <div class="panel">
+                <div class="section-title">Weekly Schedule</div>
+                <div id="timetable-content">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload CSV -->
+        <div id="tab-upload" style="display:none">
+            <div class="panel">
+                <div class="section-title">Upload Timetable CSV</div>
+                <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📂</div>
+                    <div class="upload-text">Click to select CSV file</div>
+                    <div class="upload-hint" id="file-name">No file selected</div>
+                </div>
+                <input type="file" id="file-input" accept=".csv" onchange="onFileSelect(this)">
+                <div class="csv-template">
+                    <strong>Expected CSV columns:</strong><br>
+                    <code>day,start_time,subject_name,faculty_name,room_id</code><br>
+                    Example: <code>Monday,08:00,Data Structures,Dr. Sharma,A101</code>
+                </div>
+                <div style="margin-top:1rem">
+                    <button class="btn" id="upload-btn" onclick="uploadCSV()" disabled>Upload Timetable</button>
+                </div>
+                <div class="msg" id="upload-msg"></div>
+            </div>
+        </div>
+
+        <!-- Enrollments -->
+        <div id="tab-enroll" style="display:none">
+            <div class="panel">
+                <div class="section-title">Available Subjects</div>
+                <div class="enroll-grid" id="subjects-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rescheduled -->
+        <div id="tab-rescheduled" style="display:none">
+            <div class="panel">
+                <div class="section-title">Class Updates from Professors</div>
+                <div id="rescheduled-list">
+                    <div class="empty">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/js/api.js"></script>
+    <script src="/js/wsClient.js"></script>
+    <script>
+        if (!API.requireAuth('student')) { }
+        const user = API.getUser();
+        if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
+        WS.connect();
+
+        let myEnrollments = [];
+
+        function showTab(tab) {
+            ['timetable', 'upload', 'enroll', 'rescheduled'].forEach(t => {
+                document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+            });
+            document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', ['timetable', 'upload', 'enroll', 'rescheduled'][i] === tab));
+            if (tab === 'enroll') loadSubjects();
+            if (tab === 'rescheduled') loadRescheduled();
+        }
+
+        async function loadTimetable() {
+            const data = await API.get('/api/student/timetable');
+            if (!data) return;
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const grouped = {};
+            days.forEach(d => grouped[d] = []);
+            data.forEach(t => { if (grouped[t.day]) grouped[t.day].push(t); });
+            const el = document.getElementById('timetable-content');
+            const html = days.map(day => {
+                if (grouped[day].length === 0) return '';
+                return `<div class="day-section">
+                    <div class="day-label">${day}</div>
+                    ${grouped[day].map(t => `<div class="tt-item">
+                        <div class="tt-time">${t.start_time || '–'}</div>
+                        <div><div class="tt-subject">${t.subject_name}</div>
+                        <div class="tt-meta">${t.faculty_name || ''} ${t.room_id ? '· ' + t.room_id : ''}</div></div>
+                    </div>`).join('')}
+                </div>`;
+            }).join('');
+            el.innerHTML = html || '<div class="empty">No timetable uploaded yet. Use the Upload tab.</div>';
+        }
+
+        async function loadSubjects() {
+            const [subjects, enrollments] = await Promise.all([
+                API.get('/api/enrollments/subjects'),
+                API.get('/api/enrollments')
+            ]);
+            if (!subjects) return;
+            myEnrollments = (enrollments || []).map(e => e.subject_id);
+            document.getElementById('subjects-list').innerHTML = subjects.map(s => `
+                <div class="subject-card">
+                    <div class="code">${s.subject_code}</div>
+                    <div class="name">${s.subject_name}</div>
+                    <div class="prof">👨‍🏫 ${s.professor_name}</div>
+                    <div class="prof">${s.enrolled_count} enrolled</div>
+                    ${myEnrollments.includes(s.id)
+                    ? '<button class="enroll-btn enrolled">✓ Enrolled</button>'
+                    : `<button class="enroll-btn" onclick="enroll(${s.id}, this)">+ Enroll</button>`}
+                </div>`).join('') || '<div class="empty">No subjects available</div>';
+        }
+
+        async function enroll(subjectId, btn) {
+            btn.disabled = true; btn.textContent = 'Enrolling...';
+            const { ok, data } = await API.post('/api/enrollments', { subjectId });
+            if (ok) { btn.className = 'enroll-btn enrolled'; btn.textContent = '✓ Enrolled'; }
+            else { btn.disabled = false; btn.textContent = '+ Enroll'; alert(data.error); }
+        }
+
+        async function loadRescheduled() {
+            const data = await API.get('/api/student/rescheduled');
+            if (!data) return;
+            const el = document.getElementById('rescheduled-list');
+            if (data.length === 0) { el.innerHTML = '<div class="empty">No class updates</div>'; return; }
+            const statusColor = { scheduled: '#10b981', cancelled: '#ef4444', completed: '#6b7280' };
+            el.innerHTML = data.map(c => `
+                <div class="tt-item" style="border-left:3px solid ${statusColor[c.status] || '#6b7280'}">
+                    <div class="tt-time">${c.date}<br>${c.start_time}</div>
+                    <div>
+                        <div class="tt-subject">${c.subject_name || 'Class'}</div>
+                        <div class="tt-meta">${c.professor_name} · Room ${c.room_id}</div>
+                        <div style="font-size:0.75rem;color:${statusColor[c.status]};margin-top:4px;text-transform:capitalize">${c.status}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        let selectedFile = null;
+        function onFileSelect(input) {
+            selectedFile = input.files[0];
+            document.getElementById('file-name').textContent = selectedFile ? selectedFile.name : 'No file selected';
+            document.getElementById('upload-btn').disabled = !selectedFile;
+        }
+
+        async function uploadCSV() {
+            if (!selectedFile) return;
+            const btn = document.getElementById('upload-btn');
+            const msg = document.getElementById('upload-msg');
+            btn.disabled = true; btn.textContent = 'Uploading...';
+            const formData = new FormData();
+            formData.append('timetable', selectedFile);
+            const { ok, data } = await API.uploadFile('/api/student/timetable/upload', formData);
+            msg.style.display = 'block';
+            if (ok) {
+                msg.className = 'msg success';
+                msg.textContent = `✓ Uploaded ${data.inserted} entries successfully.`;
+                loadTimetable();
+            } else {
+                msg.className = 'msg error';
+                msg.textContent = data.error || 'Upload failed';
+            }
+            btn.disabled = false; btn.textContent = 'Upload Timetable';
+        }
+
+        loadTimetable();
+    </script>
+</body>
+
+</html>
