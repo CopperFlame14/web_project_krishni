@@ -245,20 +245,18 @@
         </div>
     </div>
 
+    <script src="/js/api.js"></script>
     <script>
-        const token = localStorage.getItem('token');
-        if (!token) window.location.href = '/login.html';
+        if (!API.requireAuth('admin')) { }
+        const user = API.getUser();
+        if (user) document.getElementById('admin-welcome').innerText = `Welcome, ${user.full_name || user.username} (System Admin)`;
 
         let currentTab = 'professors';
 
         async function init() {
             try {
-                const res = await fetch('/api/admin/dashboard', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.status === 401 || res.status === 403) window.location.href = '/login.html';
-
-                const data = await res.json();
+                const data = await API.get('/api/admin/dashboard');
+                if (!data) return; // API.get handles 401 redirect
                 document.getElementById('stat-profs').innerText = data.professors;
                 document.getElementById('stat-students').innerText = data.students;
                 document.getElementById('stat-courses').innerText = data.courses;
@@ -276,11 +274,8 @@
         }
 
         async function loadTabData() {
-            const res = await fetch(`/api/admin/${currentTab}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            renderTable(data);
+            const data = await API.get(`/api/admin/${currentTab}`);
+            if (data) renderTable(data);
         }
 
         function switchTab(tab) {
@@ -334,20 +329,13 @@
         async function toggleFreeze(status) {
             if (status && !confirm('Are you sure? This will lock enrollment for all students.')) return;
 
-            await fetch('/api/admin/freeze', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status })
-            });
-            init();
+            const res = await API.post('/api/admin/freeze', { status });
+            if (res.ok) init();
+            else alert(res.data.error || 'Failed to update system state');
         }
 
         function logout() {
-            localStorage.clear();
-            window.location.href = '/login.html';
+            API.logout();
         }
 
         init();
