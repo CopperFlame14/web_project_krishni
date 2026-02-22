@@ -26,13 +26,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        const existing = await prepare('SELECT id FROM users WHERE username = $1 OR email = $2').get(username, email);
+        const existing = await prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
         if (existing) {
             return res.status(409).json({ error: 'Username or email already exists' });
         }
 
         const hash = await hashPassword(password);
-        const result = await prepare('INSERT INTO users (username, email, password, role, full_name) VALUES ($1, $2, $3, $4, $5) RETURNING id').run(username, email, hash, role, full_name || username);
+        const result = await prepare('INSERT INTO users (username, email, password, role, full_name) VALUES (?, ?, ?, ?, ?) RETURNING id').run(username, email, hash, role, full_name || username);
         const userId = result.lastInsertRowid;
 
         const token = signToken({ id: userId, username, email, role, full_name: full_name || username });
@@ -52,7 +52,7 @@ router.post('/login', loginLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
-        const user = await prepare('SELECT * FROM users WHERE username = $1 OR email = $2').get(username, username);
+        const user = await prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(username, username);
         if (!user || !(await comparePassword(password, user.password))) {
             console.log(`❌ Failed login: ${username}`);
             return res.status(401).json({ error: 'Invalid username or password' });
@@ -70,7 +70,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 // GET /api/auth/me
 router.get('/me', requireAuth, async (req, res) => {
     try {
-        const user = await prepare('SELECT id, username, email, role, full_name, created_at FROM users WHERE id = $1').get(req.user.id);
+        const user = await prepare('SELECT id, username, email, role, full_name, created_at FROM users WHERE id = ?').get(req.user.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (err) {
@@ -81,7 +81,7 @@ router.get('/me', requireAuth, async (req, res) => {
 // GET /api/auth/verify — validate token, return user info (used by frontend auth checks)
 router.get('/verify', requireAuth, async (req, res) => {
     try {
-        const user = await prepare('SELECT id, username, email, role, full_name FROM users WHERE id = $1').get(req.user.id);
+        const user = await prepare('SELECT id, username, email, role, full_name FROM users WHERE id = ?').get(req.user.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         res.json({ valid: true, user });
     } catch (err) {

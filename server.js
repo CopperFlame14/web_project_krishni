@@ -13,16 +13,8 @@ const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000').split(',');
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (mobile/curl/same-server)
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error(`CORS: origin ${origin} not allowed`));
-    },
-    credentials: true
-}));
+app.set('trust proxy', 1);
+app.use(cors()); // Permissive CORS for academic coordination platform
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -109,6 +101,15 @@ app.get('/student/enrollment', (req, res) => res.sendFile(path.join(__dirname, '
 // Professor pages
 app.get('/professor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'professor', 'dashboard.html')));
 app.get('/professor/schedule', (req, res) => res.sendFile(path.join(__dirname, 'public', 'professor', 'schedule.html')));
+
+// Global JSON Error Handler — prevents HTML error pages
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(err.status || 500).json({
+        error: err.message || 'Internal Server Error',
+        path: req.path
+    });
+});
 
 // ── Start Server ──────────────────────────────────────────────────────────
 async function startServer() {
