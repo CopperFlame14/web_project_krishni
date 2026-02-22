@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ── Auth ────────────────────────────────────────────────────────────────
-function getToken() { return localStorage.getItem('authToken'); }
+function getToken() { return localStorage.getItem('campus_token'); }
 function getAuthHeaders() {
     return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
 }
@@ -51,20 +51,26 @@ async function checkAuth() {
             return false;
         }
         return true;
-    } catch { return false; }
+    } catch (e) {
+        // If /verify doesn't work, fall back to checking stored role
+        const role = localStorage.getItem('campus_role');
+        return role === 'admin';
+    }
 }
 
 function updateUserIndicator() {
-    const name = localStorage.getItem('authUser') || 'Admin';
+    const user = JSON.parse(localStorage.getItem('campus_user') || 'null');
+    const name = user?.full_name || user?.username || localStorage.getItem('campus_role') || 'Admin';
     const el = document.getElementById('userIndicator');
     if (el) el.textContent = `👤 ${name}`;
 }
 
 async function logout() {
     try { await fetch(`${API_BASE}/auth/logout`, { method: 'POST', headers: { 'Authorization': `Bearer ${getToken()}` } }); } catch { }
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
-    window.location.href = '/login';
+    localStorage.removeItem('campus_token');
+    localStorage.removeItem('campus_user');
+    localStorage.removeItem('campus_role');
+    window.location.href = '/welcome';
 }
 
 // ── Tabs ────────────────────────────────────────────────────────────────
