@@ -1,4 +1,17 @@
--- Smart Campus Platform Schema (PostgreSQL)
+-- Smart Campus Platform Schema v2 (PostgreSQL)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- 0. System Configuration & Governance
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Initialize default settings
+INSERT INTO system_settings (key, value) VALUES ('enrollment_frozen', 'false') ON CONFLICT DO NOTHING;
+INSERT INTO system_settings (key, value) VALUES ('current_academic_year', '2025-26') ON CONFLICT DO NOTHING;
+INSERT INTO system_settings (key, value) VALUES ('current_semester', '1') ON CONFLICT DO NOTHING;
 
 -- 1. Blocks
 CREATE TABLE IF NOT EXISTS blocks (
@@ -44,45 +57,47 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('student','professor')),
+    role TEXT NOT NULL CHECK(role IN ('student','professor','admin')),
     full_name TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role  ON users(role);
 
--- 6. Subjects
-CREATE TABLE IF NOT EXISTS subjects (
-    id SERIAL PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
+-- 6. Courses (Formerly Subjects - now UUID based)
+CREATE TABLE IF NOT EXISTS courses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT NOT NULL,
     name TEXT NOT NULL,
-    professor_id INTEGER NOT NULL REFERENCES users(id)
+    professor_id INTEGER NOT NULL REFERENCES users(id),
+    academic_year TEXT NOT NULL,
+    semester INTEGER NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(code, academic_year, semester)
 );
 
 -- 7. Enrollments
 CREATE TABLE IF NOT EXISTS enrollments (
     id SERIAL PRIMARY KEY,
     student_id INTEGER NOT NULL REFERENCES users(id),
-    subject_id INTEGER NOT NULL REFERENCES subjects(id),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'enrolled' CHECK(status IN ('enrolled', 'pending', 'dropped')),
     enrolled_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(student_id, subject_id)
+    UNIQUE(student_id, course_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_enroll_student ON enrollments(student_id);
-CREATE INDEX IF NOT EXISTS idx_enroll_subject ON enrollments(subject_id);
-
--- 8. Timetable (Regular)
+-- 8. Timetable (Regular Master Schedule)
 CREATE TABLE IF NOT EXISTS timetable (
     id SERIAL PRIMARY KEY,
     room_id TEXT NOT NULL REFERENCES classrooms(id),
     slot_id INTEGER NOT NULL REFERENCES time_slots(id),
     day TEXT NOT NULL,
-    subject TEXT,
-    faculty TEXT
+    course_id UUID REFERENCES courses(id),
+    faculty TEXT, -- Legacy fallback
+    academic_year TEXT NOT NULL
 );
 
--- 9. Reservations
+-- 9. Reservations (One-off bookings)
 CREATE TABLE IF NOT EXISTS reservations (
     id SERIAL PRIMARY KEY,
     room_id TEXT NOT NULL REFERENCES classrooms(id),
@@ -93,37 +108,32 @@ CREATE TABLE IF NOT EXISTS reservations (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- 10. Student Timetables (Personal)
+-- 10. Student Timetables (Personalized with Clash Check)
 CREATE TABLE IF NOT EXISTS student_timetables (
     id SERIAL PRIMARY KEY,
     student_id INTEGER NOT NULL REFERENCES users(id),
-    subject_id INTEGER REFERENCES subjects(id),
+    course_id UUID REFERENCES courses(id),
     day TEXT NOT NULL,
     slot_id INTEGER REFERENCES time_slots(id),
     room_id TEXT,
-    subject_name TEXT,
-    faculty_name TEXT,
-    uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    subject_name TEXT, -- Fallback for uploaded CSV
+    academic_year TEXT NOT NULL,
+    uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(student_id, day, slot_id, academic_year) -- Clash detection at DB level
 );
 
-CREATE INDEX IF NOT EXISTS idx_st_student ON student_timetables(student_id);
-
--- 11. Professor Classes (Scheduled)
-CREATE TABLE IF NOT EXISTS professor_classes (
+-- 11. Course Sessions (Granular individual lectures)
+CREATE TABLE IF NOT EXISTS course_sessions (
     id SERIAL PRIMARY KEY,
-    professor_id INTEGER NOT NULL REFERENCES users(id),
-    subject_id INTEGER REFERENCES subjects(id),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     room_id TEXT NOT NULL REFERENCES classrooms(id),
     slot_id INTEGER NOT NULL REFERENCES time_slots(id),
     date DATE NOT NULL,
-    status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled','cancelled','completed')),
+    status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'cancelled', 'rescheduled', 'completed')),
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(room_id, slot_id, date)
+    UNIQUE(room_id, slot_id, date) -- Classroom clash detection
 );
-
-CREATE INDEX IF NOT EXISTS idx_pc_professor ON professor_classes(professor_id);
-CREATE INDEX IF NOT EXISTS idx_pc_date      ON professor_classes(date);
 
 -- 12. Notifications
 CREATE TABLE IF NOT EXISTS notifications (
@@ -132,10 +142,13 @@ CREATE TABLE IF NOT EXISTS notifications (
     type TEXT NOT NULL,
     title TEXT NOT NULL,
     message TEXT NOT NULL,
-    class_id INTEGER REFERENCES professor_classes(id),
+    session_id INTEGER REFERENCES course_sessions(id),
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_notif_user   ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notif_unread ON notifications(user_id, is_read);
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_sessions_date ON course_sessions(date);
+CREATE INDEX IF NOT EXISTS idx_st_student_year ON student_timetables(student_id, academic_year);
+CREATE INDEX IF NOT EXISTS idx_enroll_course ON enrollments(course_id);
+

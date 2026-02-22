@@ -1,15 +1,19 @@
 const { initDB, prepare, exec } = require('./db');
 
 async function seed() {
-    console.log('🌱 Seeding database...');
+    console.log('🌱 Seeding database (Smart Campus Phase 2)...');
 
     try {
         await initDB();
 
         // Clear existing data (Order matters for foreign keys)
         console.log('🧹 Clearing existing data...');
-        await exec('TRUNCATE notifications, reservations, professor_classes, enrollments, student_timetables, timetable, subjects, users, classrooms, floors, blocks, time_slots CASCADE');
+        await exec('TRUNCATE system_settings, notifications, reservations, course_sessions, enrollments, student_timetables, timetable, courses, users, classrooms, floors, blocks, time_slots CASCADE');
 
+        // Initialize System Settings
+        await prepare("INSERT INTO system_settings (key, value) VALUES ('enrollment_frozen', 'false')").run();
+        await prepare("INSERT INTO system_settings (key, value) VALUES ('current_academic_year', '2025-26')").run();
+        console.log('✅ System settings initialized');
 
         // Insert time slots (9 periods)
         const timeSlots = [
@@ -62,53 +66,38 @@ async function seed() {
         }
         console.log('✅ Classrooms and floors created');
 
+        // Insert users (Admin, Professors, Students)
+        const passwordHash = '$2b$10$wI65yP2u.L.I0r92U.6z.uRE65U7H7.p.u.p.u.p.u.p.u.p.u.p.';
 
-        // Insert sample users (1 Admin, 2 Professors, 2 Students)
-        // Note: Password is 'password123' hashed (approx)
-        const passwordHash = '$2b$10$wI65yP2u.L.I0r92U.6z.uRE65U7H7.p.u.p.u.p.u.p.u.p.u.p.'; // Dummy hash, should be real in prod
-
+        const adminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin_root', 'admin@campus.edu', ?, 'admin', 'System Administrator') RETURNING id").run(passwordHash);
         const prof1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_smith', 'smith@campus.edu', ?, 'professor', 'Dr. Smith') RETURNING id").run(passwordHash);
         const prof2Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_johnson', 'johnson@campus.edu', ?, 'professor', 'Prof. Johnson') RETURNING id").run(passwordHash);
-
         const stud1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('student_1', 'student1@campus.edu', ?, 'student', 'John Doe') RETURNING id").run(passwordHash);
 
         const prof1Id = prof1Res.lastInsertRowid;
         const prof2Id = prof2Res.lastInsertRowid;
         const stud1Id = stud1Res.lastInsertRowid;
+        console.log('✅ Users created (including Admin)');
 
-        console.log('✅ Sample users created');
+        // Insert Courses (UUID based)
+        const course1Res = await prepare("INSERT INTO courses (code, name, professor_id, academic_year, semester) VALUES ('CS101', 'Data Structures', ?, '2025-26', 1) RETURNING id").run(prof1Id);
+        const course2Res = await prepare("INSERT INTO courses (code, name, professor_id, academic_year, semester) VALUES ('PH201', 'Quantum Physics', ?, '2025-26', 1) RETURNING id").run(prof2Id);
 
-        // Insert subjects
-        const sub1Res = await prepare("INSERT INTO subjects (code, name, professor_id) VALUES ('CS101', 'Mathematics', ?) RETURNING id").run(prof1Id);
-        const sub2Res = await prepare("INSERT INTO subjects (code, name, professor_id) VALUES ('CS102', 'Physics', ?) RETURNING id").run(prof2Id);
-
-        const sub1Id = sub1Res.lastInsertRowid;
-        console.log('✅ Subjects created');
+        const course1Id = course1Res.lastInsertRowid; // This is a UUID String
+        const course2Id = course2Res.lastInsertRowid;
+        console.log('✅ Courses created with UUIDs');
 
         // Enroll students
-        await prepare("INSERT INTO enrollments (student_id, subject_id) VALUES (?, ?)").run(stud1Id, sub1Id);
+        await prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)").run(stud1Id, course1Id);
         console.log('✅ Enrollments created');
 
-        // Insert dynamic timetable entries
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        const rooms = ['A001', 'B101', 'C201', 'D301'];
+        // Master Timetable
+        await prepare("INSERT INTO timetable (room_id, slot_id, day, course_id, academic_year) VALUES ('A001', 1, 'Monday', ?, '2025-26')").run(course1Id);
+        console.log('✅ Master timetable created');
 
-        for (const day of days) {
-            for (const roomId of rooms) {
-                // Randomly assign a class to Period 1 or 2
-                const slotId = Math.random() > 0.5 ? 1 : 2;
-                await prepare("INSERT INTO timetable (room_id, slot_id, day, subject, faculty) VALUES (?, ?, ?, 'Sample Subject', 'Sample Faculty')").run(roomId, slotId, day);
-            }
-        }
-        console.log('✅ Timetable entries created');
-
-        // Sample professor class
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomoDate = tomorrow.toISOString().split('T')[0];
-
-        await prepare("INSERT INTO professor_classes (professor_id, subject_id, room_id, slot_id, date, status) VALUES (?, ?, 'A101', 3, ?::DATE, 'scheduled')").run(prof1Id, sub1Id, tomoDate);
-        console.log('✅ Sample professor class created');
+        // Course Session (Granular)
+        await prepare("INSERT INTO course_sessions (course_id, room_id, slot_id, date, status) VALUES (?, 'A101', 3, '2026-02-23', 'scheduled')").run(course1Id);
+        console.log('✅ Course sessions created');
 
         console.log('🎉 Database seeding complete!');
     } catch (err) {
@@ -118,4 +107,3 @@ async function seed() {
 }
 
 seed();
-
