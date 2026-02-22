@@ -83,13 +83,17 @@ async function seed() {
         // Insert users (Admin, Professors, Students)
         const bcrypt = require('bcryptjs');
         const passwordHash = bcrypt.hashSync('password123', 10);
+        const adminHash = bcrypt.hashSync('admin123', 10);
 
-        const adminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin_root', 'admin@campus.edu', ?, 'admin', 'System Administrator') RETURNING id").run(passwordHash);
+        // Required User: admin / admin123
+        const mainAdminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin', 'admin@smartcampus.edu', ?, 'admin', 'Primary Admin') RETURNING id").run(adminHash);
+
+        const adminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin_root', 'admin_root@campus.edu', ?, 'admin', 'System Administrator') RETURNING id").run(passwordHash);
         const prof1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_smith', 'smith@campus.edu', ?, 'professor', 'Dr. Smith') RETURNING id").run(passwordHash);
         const prof2Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_johnson', 'johnson@campus.edu', ?, 'professor', 'Prof. Johnson') RETURNING id").run(passwordHash);
         const stud1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('student_1', 'student1@campus.edu', ?, 'student', 'John Doe') RETURNING id").run(passwordHash);
 
-        // Add User 'krish'
+        // User 'krish' / 'password123'
         const krishRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('krish', 'krish@student.edu', ?, 'student', 'Krish') RETURNING id").run(passwordHash);
 
         const prof1Id = prof1Res.lastInsertRowid;
@@ -107,8 +111,8 @@ async function seed() {
         console.log('✅ Courses created with UUIDs');
 
         // Enroll students
-        await prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)").run(stud1Id, course1Id);
-        console.log('✅ Enrollments created');
+        await prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)").run(krishId, course1Id);
+        console.log('✅ Enrollments created for Krish');
 
         // Master Timetable
         await prepare("INSERT INTO timetable (room_id, slot_id, day, course_id, academic_year) VALUES ('A001', 1, 'Monday', ?, '2025-26')").run(course1Id);
