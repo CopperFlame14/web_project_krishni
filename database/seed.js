@@ -25,13 +25,9 @@ async function seed() {
         await exec(schemaSql);
         console.log('✅ Schema applied successfully');
 
-        // Clear existing data (Order matters for foreign keys)
-        console.log('🧹 Clearing existing data...');
-        await exec('TRUNCATE system_settings, notifications, reservations, course_sessions, enrollments, student_timetables, timetable, courses, users, classrooms, floors, blocks, time_slots CASCADE');
-
         // Initialize System Settings
-        await prepare("INSERT INTO system_settings (key, value) VALUES ('enrollment_frozen', 'false')").run();
-        await prepare("INSERT INTO system_settings (key, value) VALUES ('current_academic_year', '2025-26')").run();
+        await prepare("INSERT INTO system_settings (key, value) VALUES ('enrollment_frozen', 'false') ON CONFLICT DO NOTHING").run();
+        await prepare("INSERT INTO system_settings (key, value) VALUES ('current_academic_year', '2025-26') ON CONFLICT DO NOTHING").run();
         console.log('✅ System settings initialized');
 
         // Insert time slots (9 periods)
@@ -48,7 +44,7 @@ async function seed() {
         ];
 
         for (const slot of timeSlots) {
-            await prepare('INSERT INTO time_slots (id, start_time, end_time, label) VALUES (?, ?, ?, ?)').run(slot.id, slot.start, slot.end, slot.label);
+            await prepare('INSERT INTO time_slots (id, start_time, end_time, label) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING').run(slot.id, slot.start, slot.end, slot.label);
         }
         console.log('✅ Time slots created');
 
@@ -56,8 +52,8 @@ async function seed() {
         const blockNames = ['A', 'B', 'C', 'D'];
         const blockIds = {};
         for (const name of blockNames) {
-            const res = await prepare('INSERT INTO blocks (name, label) VALUES (?, ?) RETURNING id').run(name, `Block ${name}`);
-            blockIds[name] = res.lastInsertRowid;
+            const res = await prepare('INSERT INTO blocks (name, label) VALUES (?, ?) ON CONFLICT (name) DO NOTHING RETURNING id').run(name, `Block ${name}`);
+            blockIds[name] = res.lastInsertRowid || (await prepare("SELECT id FROM blocks WHERE name = ?").get(name)).id;
         }
         console.log('✅ Blocks created');
 
@@ -71,32 +67,36 @@ async function seed() {
 
         for (const blockName of blockNames) {
             for (let fNum = 0; fNum <= 3; fNum++) {
-                const floorRes = await prepare('INSERT INTO floors (block_id, number, label) VALUES (?, ?, ?) RETURNING id').run(blockIds[blockName], fNum, `Floor ${fNum}`);
-                const floorId = floorRes.lastInsertRowid;
+                const floorRes = await prepare('INSERT INTO floors (block_id, number, label) VALUES (?, ?, ?) ON CONFLICT (block_id, number) DO NOTHING RETURNING id').run(blockIds[blockName], fNum, `Floor ${fNum}`);
+                const floorId = floorRes.lastInsertRowid || (await prepare("SELECT id FROM floors WHERE block_id = ? AND number = ?").get(blockIds[blockName], fNum)).id;
 
                 for (let rNum = 1; rNum <= 4; rNum++) {
                     const roomId = `${blockName}${fNum}0${rNum}`;
                     const capacity = 30 + (Math.floor(Math.random() * 5) * 20);
                     const amenities = amenitiesOptions[Math.floor(Math.random() * amenitiesOptions.length)];
-                    // Match schema.sql: columns are id, block, floor, capacity, amenities, floor_id
-                    await prepare('INSERT INTO classrooms (id, block, floor, capacity, amenities, floor_id) VALUES (?, ?, ?, ?, ?, ?)').run(roomId, blockName, fNum, capacity, amenities, floorId);
+                    await prepare('INSERT INTO classrooms (id, block, floor, capacity, amenities, floor_id) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING').run(roomId, blockName, fNum, capacity, amenities, floorId);
                 }
             }
         }
         console.log('✅ Classrooms and floors created');
 
         // Insert users (Admin, Professors, Students)
-        const passwordHash = '$2b$10$wI65yP2u.L.I0r92U.6z.uRE65U7H7.p.u.p.u.p.u.p.u.p.u.p.';
+        const bcrypt = require('bcryptjs');
+        const passwordHash = bcrypt.hashSync('password123', 10);
 
         const adminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin_root', 'admin@campus.edu', ?, 'admin', 'System Administrator') RETURNING id").run(passwordHash);
         const prof1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_smith', 'smith@campus.edu', ?, 'professor', 'Dr. Smith') RETURNING id").run(passwordHash);
         const prof2Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('prof_johnson', 'johnson@campus.edu', ?, 'professor', 'Prof. Johnson') RETURNING id").run(passwordHash);
         const stud1Res = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('student_1', 'student1@campus.edu', ?, 'student', 'John Doe') RETURNING id").run(passwordHash);
 
+        // Add User 'krish'
+        const krishRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('krish', 'krish@student.edu', ?, 'student', 'Krish') RETURNING id").run(passwordHash);
+
         const prof1Id = prof1Res.lastInsertRowid;
         const prof2Id = prof2Res.lastInsertRowid;
         const stud1Id = stud1Res.lastInsertRowid;
-        console.log('✅ Users created (including Admin)');
+        const krishId = krishRes.lastInsertRowid;
+        console.log('✅ Users created (including Admin and Krish)');
 
         // Insert Courses (UUID based)
         const course1Res = await prepare("INSERT INTO courses (code, name, professor_id, academic_year, semester) VALUES ('CS101', 'Data Structures', ?, '2025-26', 1) RETURNING id").run(prof1Id);
