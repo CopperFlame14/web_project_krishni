@@ -4,9 +4,9 @@ const { prepare } = require('../database/db');
 const requireAuth = require('../middleware/requireAuth');
 
 // GET /api/blocks — list all blocks
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     try {
-        const blocks = prepare('SELECT * FROM blocks ORDER BY name').all();
+        const blocks = await prepare('SELECT * FROM blocks ORDER BY name').all();
         res.json(blocks);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -14,13 +14,13 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // GET /api/blocks/:blockId/floors — floors in a block
-router.get('/:blockId/floors', requireAuth, (req, res) => {
+router.get('/:blockId/floors', requireAuth, async (req, res) => {
     try {
         const { blockId } = req.params;
-        const block = prepare('SELECT * FROM blocks WHERE id = ?').get(blockId);
+        const block = await prepare('SELECT * FROM blocks WHERE id = ?').get(blockId);
         if (!block) return res.status(404).json({ error: 'Block not found' });
 
-        const floors = prepare('SELECT * FROM floors WHERE block_id = ? ORDER BY number').all(blockId);
+        const floors = await prepare('SELECT * FROM floors WHERE block_id = ? ORDER BY number').all(blockId);
         res.json({ block, floors });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -28,3 +28,4 @@ router.get('/:blockId/floors', requireAuth, (req, res) => {
 });
 
 module.exports = router;
+

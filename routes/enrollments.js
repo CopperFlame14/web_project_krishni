@@ -5,9 +5,9 @@ const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
 
 // GET /api/enrollments — my enrollments
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     try {
-        const enrollments = prepare(`
+        const enrollments = await prepare(`
             SELECT e.*, s.name as subject_name, s.code as subject_code,
                    u.full_name as professor_name, u.email as professor_email
             FROM enrollments e
@@ -23,19 +23,19 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // POST /api/enrollments — enroll in a subject (student only)
-router.post('/', requireAuth, requireRole('student'), (req, res) => {
+router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     try {
         const { subjectId } = req.body;
         if (!subjectId) return res.status(400).json({ error: 'subjectId is required' });
 
-        const subject = prepare('SELECT * FROM subjects WHERE id = ?').get(subjectId);
+        const subject = await prepare('SELECT * FROM subjects WHERE id = ?').get(subjectId);
         if (!subject) return res.status(404).json({ error: 'Subject not found' });
 
         try {
-            const result = prepare('INSERT INTO enrollments (student_id, subject_id) VALUES (?, ?)').run(req.user.id, subjectId);
+            const result = await prepare('INSERT INTO enrollments (student_id, subject_id) VALUES (?, ?) RETURNING id').run(req.user.id, subjectId);
             res.status(201).json({ success: true, enrollmentId: result.lastInsertRowid, subject });
         } catch (e) {
-            if (e.message?.includes('UNIQUE')) return res.status(409).json({ error: 'Already enrolled in this subject' });
+            if (e.message?.toLowerCase().includes('unique')) return res.status(409).json({ error: 'Already enrolled in this subject' });
             throw e;
         }
     } catch (err) {
@@ -44,9 +44,9 @@ router.post('/', requireAuth, requireRole('student'), (req, res) => {
 });
 
 // DELETE /api/enrollments/:subjectId — unenroll
-router.delete('/:subjectId', requireAuth, requireRole('student'), (req, res) => {
+router.delete('/:subjectId', requireAuth, requireRole('student'), async (req, res) => {
     try {
-        prepare('DELETE FROM enrollments WHERE student_id = ? AND subject_id = ?').run(req.user.id, parseInt(req.params.subjectId));
+        await prepare('DELETE FROM enrollments WHERE student_id = ? AND subject_id = ?').run(req.user.id, parseInt(req.params.subjectId));
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -54,9 +54,9 @@ router.delete('/:subjectId', requireAuth, requireRole('student'), (req, res) => 
 });
 
 // GET /api/enrollments/subjects — list all available subjects (for enrollment)
-router.get('/subjects', requireAuth, (req, res) => {
+router.get('/subjects', requireAuth, async (req, res) => {
     try {
-        const subjects = prepare(`
+        const subjects = await prepare(`
             SELECT s.*, u.full_name as professor_name,
                    (SELECT COUNT(*) FROM enrollments e WHERE e.subject_id = s.id) as enrolled_count
             FROM subjects s
@@ -70,3 +70,4 @@ router.get('/subjects', requireAuth, (req, res) => {
 });
 
 module.exports = router;
+

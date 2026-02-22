@@ -21,14 +21,14 @@ const upload = multer({
 router.use(requireAuth, requireRole('student'));
 
 // GET /api/student/dashboard
-router.get('/dashboard', (req, res) => {
+router.get('/dashboard', async (req, res) => {
     try {
         const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
         const todayDate = new Date(today).toISOString().split('T')[0];
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const todayDay = days[new Date(today).getDay()];
 
-        const enrollments = prepare(`
+        const enrollments = await prepare(`
             SELECT e.*, s.name as subject_name, s.code as subject_code, u.full_name as professor_name
             FROM enrollments e
             JOIN subjects s ON e.subject_id = s.id
@@ -36,7 +36,7 @@ router.get('/dashboard', (req, res) => {
             WHERE e.student_id = ?
         `).all(req.user.id);
 
-        const todayTimetable = prepare(`
+        const todayTimetable = await prepare(`
             SELECT st.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM student_timetables st
             LEFT JOIN time_slots ts ON st.slot_id = ts.id
@@ -44,11 +44,11 @@ router.get('/dashboard', (req, res) => {
             ORDER BY ts.start_time
         `).all(req.user.id, todayDay);
 
-        const unreadCount = prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = 0').get(req.user.id);
+        const unreadCount = await prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = FALSE').get(req.user.id);
 
         res.json({
             student: { id: req.user.id, name: req.user.full_name, email: req.user.email },
-            stats: { enrollments: enrollments.length, unreadNotifications: unreadCount.c },
+            stats: { enrollments: enrollments.length, unreadNotifications: parseInt(unreadCount.c) },
             todayTimetable,
             enrollments
         });
@@ -58,9 +58,9 @@ router.get('/dashboard', (req, res) => {
 });
 
 // GET /api/student/timetable
-router.get('/timetable', (req, res) => {
+router.get('/timetable', async (req, res) => {
     try {
-        const timetable = prepare(`
+        const timetable = await prepare(`
             SELECT st.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM student_timetables st
             LEFT JOIN time_slots ts ON st.slot_id = ts.id
@@ -78,7 +78,7 @@ router.get('/timetable', (req, res) => {
 
 // POST /api/student/timetable/upload — upload CSV timetable
 // Expected CSV columns: day, start_time, end_time, subject_name, faculty_name, room_id
-router.post('/timetable/upload', upload.single('timetable'), (req, res) => {
+router.post('/timetable/upload', upload.single('timetable'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'CSV file is required' });
 
@@ -94,7 +94,7 @@ router.post('/timetable/upload', upload.single('timetable'), (req, res) => {
         let errors = [];
 
         // Clear existing timetable for this student
-        prepare('DELETE FROM student_timetables WHERE student_id = ?').run(req.user.id);
+        await prepare('DELETE FROM student_timetables WHERE student_id = ?').run(req.user.id);
 
         for (const [i, row] of records.entries()) {
             const { day, subject_name, faculty_name, room_id, slot_id } = row;
@@ -110,11 +110,11 @@ router.post('/timetable/upload', upload.single('timetable'), (req, res) => {
             // Try to find matching slot_id from start_time if provided
             let resolvedSlotId = slot_id ? parseInt(slot_id) : null;
             if (!resolvedSlotId && row.start_time) {
-                const slot = prepare('SELECT id FROM time_slots WHERE start_time = ?').get(row.start_time);
+                const slot = await prepare('SELECT id FROM time_slots WHERE start_time = ?').get(row.start_time);
                 resolvedSlotId = slot?.id || null;
             }
 
-            prepare(`
+            await prepare(`
                 INSERT INTO student_timetables (student_id, day, slot_id, room_id, subject_name, faculty_name)
                 VALUES (?, ?, ?, ?, ?, ?)
             `).run(req.user.id, day, resolvedSlotId, room_id || null, subject_name, faculty_name || null);
@@ -128,24 +128,24 @@ router.post('/timetable/upload', upload.single('timetable'), (req, res) => {
 });
 
 // GET /api/student/notifications
-router.get('/notifications', (req, res) => {
+router.get('/notifications', async (req, res) => {
     try {
         const { unread } = req.query;
         let sql = 'SELECT * FROM notifications WHERE user_id = ?';
-        if (unread === 'true') sql += ' AND is_read = 0';
+        if (unread === 'true') sql += ' AND is_read = FALSE';
         sql += ' ORDER BY created_at DESC LIMIT 50';
-        const notifications = prepare(sql).all(req.user.id);
-        const unreadCount = prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = 0').get(req.user.id);
-        res.json({ notifications, unreadCount: unreadCount.c });
+        const notifications = await prepare(sql).all(req.user.id);
+        const unreadCount = await prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = FALSE').get(req.user.id);
+        res.json({ notifications, unreadCount: parseInt(unreadCount.c) });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 // PUT /api/student/notifications/:id/read
-router.put('/notifications/:id/read', (req, res) => {
+router.put('/notifications/:id/read', async (req, res) => {
     try {
-        prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
+        await prepare('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -153,9 +153,9 @@ router.put('/notifications/:id/read', (req, res) => {
 });
 
 // PUT /api/student/notifications/read-all
-router.put('/notifications/read-all', (req, res) => {
+router.put('/notifications/read-all', async (req, res) => {
     try {
-        prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').run(req.user.id);
+        await prepare('UPDATE notifications SET is_read = TRUE WHERE user_id = ?').run(req.user.id);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -163,10 +163,10 @@ router.put('/notifications/read-all', (req, res) => {
 });
 
 // GET /api/student/availability — live room availability
-router.get('/availability', (req, res) => {
+router.get('/availability', async (req, res) => {
     try {
         const { slot_id, date, block } = req.query;
-        let rooms = getAllRoomsWithStatus(slot_id, date);
+        let rooms = await getAllRoomsWithStatus(slot_id, date);
         if (block) rooms = rooms.filter(r => r.block === block);
         res.json(rooms);
     } catch (err) {
@@ -175,9 +175,9 @@ router.get('/availability', (req, res) => {
 });
 
 // GET /api/student/rescheduled — view rescheduled classes for enrolled subjects
-router.get('/rescheduled', (req, res) => {
+router.get('/rescheduled', async (req, res) => {
     try {
-        const rescheduled = prepare(`
+        const rescheduled = await prepare(`
             SELECT pc.*, ts.start_time, ts.end_time, ts.label as slot_label,
                    u.full_name as professor_name, s.name as subject_name, s.code as subject_code
             FROM professor_classes pc
@@ -195,3 +195,4 @@ router.get('/rescheduled', (req, res) => {
 });
 
 module.exports = router;
+

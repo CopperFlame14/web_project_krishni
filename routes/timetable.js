@@ -7,7 +7,7 @@ const { getCurrentTimeSlot } = require('../services/statusEngine');
 router.get('/', async (req, res) => {
     try {
         await initDB();
-        const slots = prepare('SELECT * FROM time_slots ORDER BY id').all();
+        const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
         res.json(slots);
     } catch (error) {
         console.error('Error in GET /timeslots:', error);
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 router.get('/current', async (req, res) => {
     try {
         await initDB();
-        const currentSlot = getCurrentTimeSlot();
+        const currentSlot = await getCurrentTimeSlot();
         const now = new Date();
 
         res.json({
@@ -34,3 +34,4 @@ router.get('/current', async (req, res) => {
 });
 
 module.exports = router;
+

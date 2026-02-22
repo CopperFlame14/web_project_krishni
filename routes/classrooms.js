@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
         await initDB();
         const { block, floor, capacity, status, search, slot_id, date } = req.query;
 
-        let rooms = getAllRoomsWithStatus(slot_id, date);
+        let rooms = await getAllRoomsWithStatus(slot_id, date);
 
         if (block) rooms = rooms.filter(r => r.block === block);
         if (floor !== undefined && floor !== '') rooms = rooms.filter(r => r.floor === parseInt(floor));
@@ -38,11 +38,11 @@ router.get('/floor/:floorId', requireAuth, async (req, res) => {
         const { floorId } = req.params;
         const { slot_id, date } = req.query;
 
-        const floor = prepare('SELECT f.*, b.name as block_name, b.label as block_label FROM floors f JOIN blocks b ON f.block_id = b.id WHERE f.id = ?').get(floorId);
+        const floor = await prepare('SELECT f.*, b.name as block_name, b.label as block_label FROM floors f JOIN blocks b ON f.block_id = b.id WHERE f.id = ?').get(floorId);
         if (!floor) return res.status(404).json({ error: 'Floor not found' });
 
-        const rooms = prepare('SELECT * FROM classrooms WHERE floor_id = ? ORDER BY id').all(floorId);
-        const allRoomsWithStatus = getAllRoomsWithStatus(slot_id, date);
+        const rooms = await prepare('SELECT * FROM classrooms WHERE floor_id = ? ORDER BY id').all(floorId);
+        const allRoomsWithStatus = await getAllRoomsWithStatus(slot_id, date);
         const statusMap = Object.fromEntries(allRoomsWithStatus.map(r => [r.id, r]));
 
         const roomsWithStatus = rooms.map(room => ({
@@ -61,15 +61,15 @@ router.get('/floor/:floorId', requireAuth, async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         await initDB();
-        const room = prepare('SELECT * FROM classrooms WHERE id = ?').get(req.params.id);
+        const room = await prepare('SELECT * FROM classrooms WHERE id = ?').get(req.params.id);
         if (!room) return res.status(404).json({ error: 'Classroom not found' });
 
-        const statusInfo = getRoomStatus(room.id);
-        const currentSlot = getCurrentTimeSlot();
+        const statusInfo = await getRoomStatus(room.id);
+        const currentSlot = await getCurrentTimeSlot();
         const today = getTodayName();
         const todayDate = getTodayDate();
 
-        const todaySchedule = prepare(`
+        const todaySchedule = await prepare(`
             SELECT t.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM timetable t
             JOIN time_slots ts ON t.slot_id = ts.id
@@ -77,22 +77,22 @@ router.get('/:id', async (req, res) => {
             ORDER BY ts.id
         `).all(room.id, today);
 
-        const todayReservations = prepare(`
+        const todayReservations = await prepare(`
             SELECT r.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM reservations r
             JOIN time_slots ts ON r.slot_id = ts.id
-            WHERE r.room_id = ? AND r.date = ?
+            WHERE r.room_id = ? AND r.date = ?::DATE
             ORDER BY ts.id
         `).all(room.id, todayDate);
 
-        const todayProfClasses = prepare(`
+        const todayProfClasses = await prepare(`
             SELECT pc.*, ts.start_time, ts.end_time, ts.label as slot_label,
                    u.full_name as professor_name, s.name as subject_name
             FROM professor_classes pc
             JOIN time_slots ts ON pc.slot_id = ts.id
             JOIN users u ON pc.professor_id = u.id
             LEFT JOIN subjects s ON pc.subject_id = s.id
-            WHERE pc.room_id = ? AND pc.date = ? AND pc.status = 'scheduled'
+            WHERE pc.room_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
             ORDER BY ts.id
         `).all(room.id, todayDate);
 
@@ -118,7 +118,7 @@ router.get('/:id/slots', async (req, res) => {
         await initDB();
         const { date } = req.query;
         if (!date) return res.status(400).json({ error: 'Date is required' });
-        const slots = getAvailableSlotsForRoom(req.params.id, date);
+        const slots = await getAvailableSlotsForRoom(req.params.id, date);
         res.json(slots);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -136,7 +136,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
         let expiresAt = null;
         if (expiresIn) expiresAt = new Date(Date.now() + expiresIn * 60000).toISOString();
 
-        prepare('UPDATE classrooms SET status_override = ?, override_expires = ? WHERE id = ?').run(status, expiresAt, req.params.id);
+        await prepare('UPDATE classrooms SET status_override = ?, override_expires = ? WHERE id = ?').run(status, expiresAt, req.params.id);
         res.json({ success: true, message: `Status updated to ${status}`, expiresAt });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -147,7 +147,7 @@ router.put('/:id/status', requireAuth, async (req, res) => {
 router.delete('/:id/status', requireAuth, async (req, res) => {
     try {
         await initDB();
-        prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(req.params.id);
+        await prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(req.params.id);
         res.json({ success: true, message: 'Status override cleared' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -155,3 +155,4 @@ router.delete('/:id/status', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+

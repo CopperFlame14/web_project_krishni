@@ -9,10 +9,10 @@ const { scheduleClass, cancelClass, rescheduleClass, getProfessorClasses } = req
 router.use(requireAuth, requireRole('professor'));
 
 // GET /api/professor/classes — my scheduled classes
-router.get('/classes', (req, res) => {
+router.get('/classes', async (req, res) => {
     try {
         const { date, status } = req.query;
-        const classes = getProfessorClasses(req.user.id, { date, status });
+        const classes = await getProfessorClasses(req.user.id, { date, status });
         res.json(classes);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -20,14 +20,14 @@ router.get('/classes', (req, res) => {
 });
 
 // POST /api/professor/classes — schedule a class
-router.post('/classes', (req, res) => {
+router.post('/classes', async (req, res) => {
     try {
         const { subjectId, roomId, slotId, date, notes } = req.body;
         if (!roomId || !slotId || !date) {
             return res.status(400).json({ error: 'roomId, slotId, and date are required' });
         }
 
-        const newClass = scheduleClass({
+        const newClass = await scheduleClass({
             professorId: req.user.id,
             subjectId: subjectId || null,
             roomId, slotId, date, notes
@@ -40,9 +40,9 @@ router.post('/classes', (req, res) => {
 });
 
 // DELETE /api/professor/classes/:id — cancel a class
-router.delete('/classes/:id', (req, res) => {
+router.delete('/classes/:id', async (req, res) => {
     try {
-        const result = cancelClass(parseInt(req.params.id), req.user.id);
+        const result = await cancelClass(parseInt(req.params.id), req.user.id);
         res.json(result);
     } catch (err) {
         res.status(err.statusCode || 500).json({ error: err.message });
@@ -50,10 +50,10 @@ router.delete('/classes/:id', (req, res) => {
 });
 
 // PUT /api/professor/classes/:id — reschedule a class
-router.put('/classes/:id', (req, res) => {
+router.put('/classes/:id', async (req, res) => {
     try {
         const { newRoomId, newSlotId, newDate, notes } = req.body;
-        const newClass = rescheduleClass(parseInt(req.params.id), req.user.id, { newRoomId, newSlotId, newDate, notes });
+        const newClass = await rescheduleClass(parseInt(req.params.id), req.user.id, { newRoomId, newSlotId, newDate, notes });
         res.json({ success: true, class: newClass });
     } catch (err) {
         res.status(err.statusCode || 500).json({ error: err.message });
@@ -61,9 +61,9 @@ router.put('/classes/:id', (req, res) => {
 });
 
 // GET /api/professor/subjects — my subjects
-router.get('/subjects', (req, res) => {
+router.get('/subjects', async (req, res) => {
     try {
-        const subjects = prepare('SELECT * FROM subjects WHERE professor_id = ? ORDER BY code').all(req.user.id);
+        const subjects = await prepare('SELECT * FROM subjects WHERE professor_id = ? ORDER BY code').all(req.user.id);
         res.json(subjects);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -71,15 +71,15 @@ router.get('/subjects', (req, res) => {
 });
 
 // POST /api/professor/subjects — create a subject
-router.post('/subjects', (req, res) => {
+router.post('/subjects', async (req, res) => {
     try {
         const { code, name } = req.body;
         if (!code || !name) return res.status(400).json({ error: 'code and name are required' });
         try {
-            const result = prepare('INSERT INTO subjects (code, name, professor_id) VALUES (?, ?, ?)').run(code, name, req.user.id);
+            const result = await prepare('INSERT INTO subjects (code, name, professor_id) VALUES (?, ?, ?) RETURNING id').run(code, name, req.user.id);
             res.status(201).json({ success: true, subject: { id: result.lastInsertRowid, code, name, professor_id: req.user.id } });
         } catch (e) {
-            if (e.message?.includes('UNIQUE')) return res.status(409).json({ error: 'Subject code already exists' });
+            if (e.message?.toLowerCase().includes('unique')) return res.status(409).json({ error: 'Subject code already exists' });
             throw e;
         }
     } catch (err) {
@@ -88,13 +88,13 @@ router.post('/subjects', (req, res) => {
 });
 
 // GET /api/professor/dashboard — summary stats
-router.get('/dashboard', (req, res) => {
+router.get('/dashboard', async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
-        const todayClasses = prepare("SELECT COUNT(*) as c FROM professor_classes WHERE professor_id = ? AND date = ? AND status = 'scheduled'").get(req.user.id, today);
-        const totalClasses = prepare("SELECT COUNT(*) as c FROM professor_classes WHERE professor_id = ? AND status = 'scheduled'").get(req.user.id);
-        const subjects = prepare('SELECT COUNT(*) as c FROM subjects WHERE professor_id = ?').get(req.user.id);
-        const enrolledStudents = prepare(`
+        const todayClasses = await prepare("SELECT COUNT(*) as c FROM professor_classes WHERE professor_id = ? AND date = ?::DATE AND status = 'scheduled'").get(req.user.id, today);
+        const totalClasses = await prepare("SELECT COUNT(*) as c FROM professor_classes WHERE professor_id = ? AND status = 'scheduled'").get(req.user.id);
+        const subjects = await prepare('SELECT COUNT(*) as c FROM subjects WHERE professor_id = ?').get(req.user.id);
+        const enrolledStudents = await prepare(`
             SELECT COUNT(DISTINCT e.student_id) as c FROM enrollments e
             JOIN subjects s ON e.subject_id = s.id WHERE s.professor_id = ?
         `).get(req.user.id);
@@ -102,10 +102,10 @@ router.get('/dashboard', (req, res) => {
         res.json({
             professor: { id: req.user.id, name: req.user.full_name, email: req.user.email },
             stats: {
-                todayClasses: todayClasses.c,
-                totalScheduled: totalClasses.c,
-                subjects: subjects.c,
-                enrolledStudents: enrolledStudents.c
+                todayClasses: parseInt(todayClasses.c),
+                totalScheduled: parseInt(totalClasses.c),
+                subjects: parseInt(subjects.c),
+                enrolledStudents: parseInt(enrolledStudents.c)
             }
         });
     } catch (err) {
@@ -114,3 +114,4 @@ router.get('/dashboard', (req, res) => {
 });
 
 module.exports = router;
+

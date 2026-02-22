@@ -11,7 +11,7 @@ let wss = null;
 function initWS(httpServer) {
     wss = new WebSocket.Server({ server: httpServer, path: '/ws' });
 
-    wss.on('connection', (ws, req) => {
+    wss.on('connection', async (ws, req) => {
         try {
             const url = new URL(req.url, 'http://localhost');
             const token = url.searchParams.get('token');
@@ -24,21 +24,21 @@ function initWS(httpServer) {
             console.log(`🔌 WS connected: user ${userId} (${payload.role})`);
 
             // Send pending unread notifications on connect
-            const pending = prepare(`
-                SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC LIMIT 20
+            const pending = await prepare(`
+                SELECT * FROM notifications WHERE user_id = ? AND is_read = FALSE ORDER BY created_at DESC LIMIT 20
             `).all(userId);
             if (pending.length > 0) {
                 ws.send(JSON.stringify({ type: 'pending_notifications', notifications: pending }));
             }
 
-            ws.on('message', (data) => {
+            ws.on('message', async (data) => {
                 try {
                     const msg = JSON.parse(data);
                     if (msg.type === 'mark_read' && msg.notificationId) {
-                        prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').run(msg.notificationId, userId);
+                        await prepare('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?').run(msg.notificationId, userId);
                     }
                     if (msg.type === 'mark_all_read') {
-                        prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').run(userId);
+                        await prepare('UPDATE notifications SET is_read = TRUE WHERE user_id = ?').run(userId);
                     }
                 } catch (e) { /* ignore malformed messages */ }
             });
@@ -62,11 +62,11 @@ function initWS(httpServer) {
  * Notify all students enrolled in a subject
  */
 async function notifyEnrolledStudents(subjectId, classId, type, title, message) {
-    const enrollments = prepare('SELECT student_id FROM enrollments WHERE subject_id = ?').all(subjectId);
+    const enrollments = await prepare('SELECT student_id FROM enrollments WHERE subject_id = ?').all(subjectId);
 
     for (const { student_id } of enrollments) {
         // Insert notification record
-        prepare(`
+        await prepare(`
             INSERT INTO notifications (user_id, type, title, message, class_id)
             VALUES (?, ?, ?, ?, ?)
         `).run(student_id, type, title, message, classId);
@@ -82,8 +82,8 @@ async function notifyEnrolledStudents(subjectId, classId, type, title, message) 
 /**
  * Send a notification to a specific user
  */
-function notifyUser(userId, type, title, message, classId = null) {
-    prepare('INSERT INTO notifications (user_id, type, title, message, class_id) VALUES (?, ?, ?, ?, ?)').run(userId, type, title, message, classId);
+async function notifyUser(userId, type, title, message, classId = null) {
+    await prepare('INSERT INTO notifications (user_id, type, title, message, class_id) VALUES (?, ?, ?, ?, ?)').run(userId, type, title, message, classId);
     const client = connectedClients.get(userId);
     if (client && client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({ type, title, message, classId, timestamp: new Date().toISOString() }));

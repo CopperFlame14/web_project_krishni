@@ -11,7 +11,7 @@ function initScheduler() {
     cron.schedule('* * * * *', async () => {
         try {
             await ensureDB();
-            const currentSlot = getCurrentTimeSlot();
+            const currentSlot = await getCurrentTimeSlot();
             const currentSlotId = currentSlot?.id || null;
 
             // Detect slot change
@@ -20,7 +20,7 @@ function initScheduler() {
                 lastSlotId = currentSlotId;
 
                 // Clear any expired overrides
-                const cleared = clearExpiredOverrides();
+                const cleared = await clearExpiredOverrides();
                 if (cleared > 0) {
                     console.log(`🔄 Cleared ${cleared} expired status overrides`);
                 }
@@ -34,3 +34,4 @@ function initScheduler() {
 }
 
 module.exports = { initScheduler };
+

@@ -13,13 +13,13 @@ function getSchoolTime() {
     return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
 }
 
-function getCurrentTimeSlot() {
+async function getCurrentTimeSlot() {
     const now = getSchoolTime();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const currentTime = `${hours}:${minutes}`;
 
-    const slots = prepare('SELECT * FROM time_slots ORDER BY id').all();
+    const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
     for (const slot of slots) {
         if (currentTime >= slot.start_time && currentTime < slot.end_time) {
             return slot;
@@ -49,24 +49,24 @@ function getTodayDate() {
  * 4. Default Timetable
  * 5. Available
  */
-function getRoomStatus(roomId, slotId = null, day = null, date = null) {
-    const currentSlot = (slotId !== null && slotId !== undefined) ? parseInt(slotId) : (getCurrentTimeSlot()?.id || null);
-    const currentDay = day || getTodayName();
-    const currentDate = date || getTodayDate();
+async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
+    const slot = (slotId !== null && slotId !== undefined) ? parseInt(slotId) : ((await getCurrentTimeSlot())?.id || null);
+    const targetDay = day || getTodayName();
+    const targetDate = date || getTodayDate();
 
-    if (!currentSlot) {
+    if (!slot) {
         return { status: 'available', reason: 'Outside class hours', priority: 5 };
     }
 
     // ── PRIORITY 1: Manual Override ──────────────────────────────────────
-    const room = prepare('SELECT * FROM classrooms WHERE id = ?').get(roomId);
+    const room = await prepare('SELECT * FROM classrooms WHERE id = ?').get(roomId);
     if (room && room.status_override) {
         if (room.override_expires) {
             const expiry = new Date(room.override_expires);
             if (expiry > new Date()) {
                 return { status: room.status_override, reason: 'Manual override', priority: 1 };
             } else {
-                prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(roomId);
+                await prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(roomId);
             }
         } else {
             return { status: room.status_override, reason: 'Manual override', priority: 1 };
@@ -74,14 +74,14 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
     }
 
     // ── PRIORITY 2: Professor Scheduled Class (NEW) ──────────────────────
-    const profClass = prepare(`
+    const profClass = await prepare(`
         SELECT pc.*, u.full_name as professor_name, s.name as subject_name, s.code as subject_code
         FROM professor_classes pc
         JOIN users u ON pc.professor_id = u.id
         LEFT JOIN subjects s ON pc.subject_id = s.id
-        WHERE pc.room_id = ? AND CAST(pc.slot_id AS INTEGER) = ? AND pc.date = ?
+        WHERE pc.room_id = ? AND pc.slot_id = ? AND pc.date = ?::DATE
           AND pc.status = 'scheduled'
-    `).get(roomId, currentSlot, currentDate);
+    `).get(roomId, slot, targetDate);
 
     if (profClass) {
         return {
@@ -95,10 +95,10 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
     }
 
     // ── PRIORITY 3: Reservation ──────────────────────────────────────────
-    const reservation = prepare(`
+    const reservation = await prepare(`
         SELECT * FROM reservations
-        WHERE room_id = ? AND CAST(slot_id AS INTEGER) = ? AND date = ?
-    `).get(roomId, currentSlot, currentDate);
+        WHERE room_id = ? AND slot_id = ? AND date = ?::DATE
+    `).get(roomId, slot, targetDate);
 
     if (reservation) {
         return {
@@ -110,10 +110,10 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
     }
 
     // ── PRIORITY 4: Default Timetable ────────────────────────────────────
-    const timetableEntry = prepare(`
+    const timetableEntry = await prepare(`
         SELECT * FROM timetable
-        WHERE room_id = ? AND CAST(slot_id AS INTEGER) = ? AND day = ?
-    `).get(roomId, currentSlot, currentDay);
+        WHERE room_id = ? AND slot_id = ? AND day = ?
+    `).get(roomId, slot, targetDay);
 
     if (timetableEntry) {
         return {
@@ -128,8 +128,8 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
     return { status: 'available', reason: 'No scheduled classes', priority: 5 };
 }
 
-function getAllRoomsWithStatus(slotId = null, date = null) {
-    const rooms = prepare('SELECT * FROM classrooms ORDER BY block, floor, id').all();
+async function getAllRoomsWithStatus(slotId = null, date = null) {
+    const rooms = await prepare('SELECT * FROM classrooms ORDER BY block, floor, id').all();
 
     let targetSlotId = null;
     let targetDay = null;
@@ -142,14 +142,14 @@ function getAllRoomsWithStatus(slotId = null, date = null) {
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         targetDay = dayNames[d.getDay()];
     } else {
-        const currentSlot = getCurrentTimeSlot();
+        const currentSlot = await getCurrentTimeSlot();
         targetSlotId = currentSlot?.id || null;
         targetDay = getTodayName();
         targetDate = getTodayDate();
     }
 
-    return rooms.map(room => {
-        const statusInfo = getRoomStatus(room.id, targetSlotId, targetDay, targetDate);
+    const roomsWithStatus = await Promise.all(rooms.map(async (room) => {
+        const statusInfo = await getRoomStatus(room.id, targetSlotId, targetDay, targetDate);
         return {
             ...room,
             amenities: room.amenities ? JSON.parse(room.amenities) : [],
@@ -157,38 +157,42 @@ function getAllRoomsWithStatus(slotId = null, date = null) {
             statusReason: statusInfo.reason,
             statusDetails: statusInfo
         };
-    });
+    }));
+
+    return roomsWithStatus;
 }
 
-function getAvailableSlotsForRoom(roomId, date) {
-    const slots = prepare('SELECT * FROM time_slots ORDER BY id').all();
+async function getAvailableSlotsForRoom(roomId, date) {
+    const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
     const d = new Date(date);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const day = dayNames[d.getDay()];
 
-    return slots.map(slot => {
-        const status = getRoomStatus(roomId, slot.id, day, date);
+    const slotsWithAvailability = await Promise.all(slots.map(async (slot) => {
+        const status = await getRoomStatus(roomId, slot.id, day, date);
         return {
             ...slot,
             isAvailable: status.status === 'available',
             statusDetails: status
         };
-    });
+    }));
+
+    return slotsWithAvailability;
 }
 
 /**
  * Check for booking conflicts (checks all priority layers)
  */
-function checkConflict(roomId, slotId, date) {
+async function checkConflict(roomId, slotId, date) {
     const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(date).getDay()];
 
     // Check professor_classes (Priority 2)
-    const profConflict = prepare(`
+    const profConflict = await prepare(`
         SELECT pc.*, u.full_name as professor_name, s.name as subject_name
         FROM professor_classes pc
         JOIN users u ON pc.professor_id = u.id
         LEFT JOIN subjects s ON pc.subject_id = s.id
-        WHERE pc.room_id = ? AND pc.slot_id = ? AND pc.date = ? AND pc.status = 'scheduled'
+        WHERE pc.room_id = ? AND pc.slot_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
     `).get(roomId, slotId, date);
 
     if (profConflict) {
@@ -200,7 +204,7 @@ function checkConflict(roomId, slotId, date) {
     }
 
     // Check timetable (Priority 4)
-    const timetableConflict = prepare('SELECT * FROM timetable WHERE room_id = ? AND slot_id = ? AND day = ?').get(roomId, slotId, day);
+    const timetableConflict = await prepare('SELECT * FROM timetable WHERE room_id = ? AND slot_id = ? AND day = ?').get(roomId, slotId, day);
     if (timetableConflict) {
         return {
             hasConflict: true,
@@ -210,7 +214,7 @@ function checkConflict(roomId, slotId, date) {
     }
 
     // Check reservations (Priority 3)
-    const reservationConflict = prepare('SELECT * FROM reservations WHERE room_id = ? AND slot_id = ? AND date = ?').get(roomId, slotId, date);
+    const reservationConflict = await prepare('SELECT * FROM reservations WHERE room_id = ? AND slot_id = ? AND date = ?::DATE').get(roomId, slotId, date);
     if (reservationConflict) {
         return {
             hasConflict: true,
@@ -222,12 +226,14 @@ function checkConflict(roomId, slotId, date) {
     return { hasConflict: false };
 }
 
-function clearExpiredOverrides() {
+async function clearExpiredOverrides() {
     const now = new Date().toISOString();
-    const rooms = prepare('SELECT id FROM classrooms WHERE override_expires IS NOT NULL AND override_expires < ?').all(now);
-    rooms.forEach(room => {
-        prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(room.id);
-    });
+    const rooms = await prepare('SELECT id FROM classrooms WHERE override_expires IS NOT NULL AND override_expires < ?').all(now);
+
+    await Promise.all(rooms.map(async (room) => {
+        await prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(room.id);
+    }));
+
     return rooms.length;
 }
 
@@ -242,3 +248,4 @@ module.exports = {
     clearExpiredOverrides,
     getAvailableSlotsForRoom
 };
+

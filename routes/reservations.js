@@ -25,11 +25,11 @@ router.get('/', async (req, res) => {
             params.push(room_id);
         }
         if (date) {
-            conditions.push('r.date = ?');
+            conditions.push('r.date = ?::DATE');
             params.push(date);
         }
         if (upcoming === 'true') {
-            conditions.push('r.date >= ?');
+            conditions.push('r.date >= ?::DATE');
             params.push(getTodayDate());
         }
 
@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
 
         query += ' ORDER BY r.date, ts.id';
 
-        const reservations = prepare(query).all(...params);
+        const reservations = await prepare(query).all(...params);
         res.json(reservations);
     } catch (error) {
         console.error('Error in GET /reservations:', error);
@@ -59,7 +59,7 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         // Check for conflicts
-        const conflict = checkConflict(room_id, slot_id, date);
+        const conflict = await checkConflict(room_id, slot_id, date);
         if (conflict.hasConflict) {
             return res.status(409).json({
                 error: 'Booking conflict detected',
@@ -70,9 +70,10 @@ router.post('/', requireAuth, async (req, res) => {
 
         // Create reservation - ensure slot_id is stored as integer
         const slotIdInt = parseInt(slot_id);
-        const result = prepare(`
+        const result = await prepare(`
             INSERT INTO reservations (room_id, slot_id, date, purpose, booked_by)
             VALUES (?, ?, ?, ?, ?)
+            RETURNING id
         `).run(room_id, slotIdInt, date, purpose || '', booked_by || 'Anonymous');
 
         console.log(`✅ Reservation created: Room ${room_id}, Slot ${slotIdInt}, Date ${date}`);
@@ -92,7 +93,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
     try {
         await initDB();
-        const result = prepare('DELETE FROM reservations WHERE id = ?').run(parseInt(req.params.id));
+        const result = await prepare('DELETE FROM reservations WHERE id = ?').run(parseInt(req.params.id));
 
         if (result.changes === 0) {
             return res.status(404).json({ error: 'Reservation not found' });
@@ -106,3 +107,4 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
