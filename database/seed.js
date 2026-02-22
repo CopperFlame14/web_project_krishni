@@ -83,9 +83,9 @@ async function seed() {
         // Insert users (Admin, Professors, Students)
         const bcrypt = require('bcryptjs');
         const passwordHash = bcrypt.hashSync('password123', 10);
-        const adminHash = bcrypt.hashSync('admin123', 10);
+        const adminHash = bcrypt.hashSync('admin_campus_99', 10);
 
-        // Required User: admin / admin123
+        // Required User: admin / admin_campus_99
         const mainAdminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin', 'admin@smartcampus.edu', ?, 'admin', 'Primary Admin') RETURNING id").run(adminHash);
 
         const adminRes = await prepare("INSERT INTO users (username, email, password, role, full_name) VALUES ('admin_root', 'admin_root@campus.edu', ?, 'admin', 'System Administrator') RETURNING id").run(passwordHash);
