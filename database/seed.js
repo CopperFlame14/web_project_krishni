@@ -54,11 +54,13 @@ async function seed() {
                     const roomId = `${blockName}${fNum}0${rNum}`;
                     const capacity = 30 + (Math.floor(Math.random() * 5) * 20);
                     const amenities = amenitiesOptions[Math.floor(Math.random() * amenitiesOptions.length)];
-                    await prepare('INSERT INTO classrooms (id, block_id, floor_id, capacity, amenities) VALUES (?, ?, ?, ?, ?::JSONB)').run(roomId, blockIds[blockName], floorId, capacity, amenities);
+                    // Match schema.sql: columns are id, block, floor, capacity, amenities, floor_id
+                    await prepare('INSERT INTO classrooms (id, block, floor, capacity, amenities, floor_id) VALUES (?, ?, ?, ?, ?, ?)').run(roomId, blockName, fNum, capacity, amenities, floorId);
                 }
             }
         }
         console.log('✅ Classrooms and floors created');
+
 
         // Insert sample users (1 Admin, 2 Professors, 2 Students)
         // Note: Password is 'password123' hashed (approx)
