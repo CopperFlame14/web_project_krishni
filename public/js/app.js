@@ -16,7 +16,7 @@ let currentFilters = {
     block: '',
     floor: '',
     capacity: '',
-    status: '',
+    status: 'available',
     date: ''
 };
 
