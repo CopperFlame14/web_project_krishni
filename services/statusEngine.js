@@ -42,17 +42,32 @@ function getTodayDate() {
 }
 
 /**
+ * Get system configuration from DB
+ */
+async function getSystemConfig(key) {
+    await ensureDB();
+    const config = await prepare('SELECT value FROM system_settings WHERE key = ?').get(key);
+    return config ? config.value : null;
+}
+
+async function isEnrollmentFrozen() {
+    const val = await getSystemConfig('enrollment_frozen');
+    return val === 'true';
+}
+
+/**
  * Calculate room status with updated priority hierarchy:
  * 1. Manual Override
- * 2. Professor Scheduled Class (active)
+ * 2. Course Session (active) - NEW (formerly Professor Class)
  * 3. Reservation
- * 4. Default Timetable
+ * 4. Master Timetable (Default)
  * 5. Available
  */
 async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
     const slot = (slotId !== null && slotId !== undefined) ? parseInt(slotId) : ((await getCurrentTimeSlot())?.id || null);
     const targetDay = day || getTodayName();
     const targetDate = date || getTodayDate();
+    const academicYear = await getSystemConfig('current_academic_year');
 
     if (!slot) {
         return { status: 'available', reason: 'Outside class hours', priority: 5 };
@@ -73,23 +88,23 @@ async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
         }
     }
 
-    // ── PRIORITY 2: Professor Scheduled Class (NEW) ──────────────────────
-    const profClass = await prepare(`
-        SELECT pc.*, u.full_name as professor_name, s.name as subject_name, s.code as subject_code
-        FROM professor_classes pc
-        JOIN users u ON pc.professor_id = u.id
-        LEFT JOIN subjects s ON pc.subject_id = s.id
-        WHERE pc.room_id = ? AND pc.slot_id = ? AND pc.date = ?::DATE
-          AND pc.status = 'scheduled'
+    // ── PRIORITY 2: Course Session (Lectures/Practicals) ────────────────
+    const session = await prepare(`
+        SELECT cs.*, c.name as course_name, c.code as course_code, u.full_name as professor_name
+        FROM course_sessions cs
+        JOIN courses c ON cs.course_id = c.id
+        JOIN users u ON c.professor_id = u.id
+        WHERE cs.room_id = ? AND cs.slot_id = ? AND cs.date = ?::DATE
+          AND cs.status = 'scheduled'
     `).get(roomId, slot, targetDate);
 
-    if (profClass) {
+    if (session) {
         return {
             status: 'occupied',
-            reason: profClass.subject_name || 'Professor Class',
-            faculty: profClass.professor_name,
-            subjectCode: profClass.subject_code,
-            classId: profClass.id,
+            reason: session.course_name || 'Active Session',
+            faculty: session.professor_name,
+            courseCode: session.course_code,
+            sessionId: session.id,
             priority: 2
         };
     }
@@ -109,23 +124,27 @@ async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
         };
     }
 
-    // ── PRIORITY 4: Default Timetable ────────────────────────────────────
+    // ── PRIORITY 4: Master Timetable ────────────────────────────────────
     const timetableEntry = await prepare(`
-        SELECT * FROM timetable
-        WHERE room_id = ? AND slot_id = ? AND day = ?
-    `).get(roomId, slot, targetDay);
+        SELECT t.*, c.name as course_name, c.code as course_code, u.full_name as professor_name
+        FROM timetable t
+        LEFT JOIN courses c ON t.course_id = c.id
+        LEFT JOIN users u ON c.professor_id = u.id
+        WHERE t.room_id = ? AND t.slot_id = ? AND t.day = ? AND t.academic_year = ?
+    `).get(roomId, slot, targetDay, academicYear);
 
     if (timetableEntry) {
         return {
             status: 'occupied',
-            reason: timetableEntry.subject,
-            faculty: timetableEntry.faculty,
+            reason: timetableEntry.course_name || timetableEntry.faculty || 'Regular Class',
+            faculty: timetableEntry.professor_name || timetableEntry.faculty,
+            courseCode: timetableEntry.course_code,
             priority: 4
         };
     }
 
     // ── PRIORITY 5: Available ────────────────────────────────────────────
-    return { status: 'available', reason: 'No scheduled classes', priority: 5 };
+    return { status: 'available', reason: 'No scheduled activities', priority: 5 };
 }
 
 async function getAllRoomsWithStatus(slotId = null, date = null) {
@@ -135,6 +154,7 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
     let targetSlotId = null;
     let targetDay = null;
     let targetDate = null;
+    const academicYear = await getSystemConfig('current_academic_year');
 
     if (slotId || date) {
         targetDate = date || getTodayDate();
@@ -159,14 +179,14 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
         }));
     }
 
-    // Batch fetch data for ALL rooms to improve performance
-    const [profClasses, reservations, timetableEntries] = await Promise.all([
+    // Batch fetch data for ALL rooms
+    const [sessions, reservations, timetableEntries] = await Promise.all([
         prepare(`
-            SELECT pc.*, u.full_name as professor_name, s.name as subject_name, s.code as subject_code
-            FROM professor_classes pc
-            JOIN users u ON pc.professor_id = u.id
-            LEFT JOIN subjects s ON pc.subject_id = s.id
-            WHERE pc.slot_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
+            SELECT cs.*, c.name as course_name, c.code as course_code, u.full_name as professor_name
+            FROM course_sessions cs
+            JOIN courses c ON cs.course_id = c.id
+            JOIN users u ON c.professor_id = u.id
+            WHERE cs.slot_id = ? AND cs.date = ?::DATE AND cs.status = 'scheduled'
         `).all(targetSlotId, targetDate),
 
         prepare(`
@@ -175,20 +195,22 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
         `).all(targetSlotId, targetDate),
 
         prepare(`
-            SELECT * FROM timetable
-            WHERE slot_id = ? AND day = ?
-        `).all(targetSlotId, targetDay)
+            SELECT t.*, c.name as course_name, c.code as course_code, u.full_name as professor_name
+            FROM timetable t
+            LEFT JOIN courses c ON t.course_id = c.id
+            LEFT JOIN users u ON c.professor_id = u.id
+            WHERE t.slot_id = ? AND t.day = ? AND t.academic_year = ?
+        `).all(targetSlotId, targetDay, academicYear)
     ]);
 
-    // Create lookup maps for O(1) matching
-    const profClassMap = Object.fromEntries(profClasses.map(c => [c.room_id, c]));
+    const sessionMap = Object.fromEntries(sessions.map(s => [s.room_id, s]));
     const reservationMap = Object.fromEntries(reservations.map(r => [r.room_id, r]));
     const timetableMap = Object.fromEntries(timetableEntries.map(t => [t.room_id, t]));
 
     const now = new Date();
 
     const roomsWithStatus = rooms.map(room => {
-        let status = { status: 'available', reason: 'No scheduled classes', priority: 5 };
+        let status = { status: 'available', reason: 'No scheduled activities', priority: 5 };
 
         // 1. Manual Override
         if (room.status_override) {
@@ -200,37 +222,31 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
             }
         }
 
-        // 2. Professor Class (if priority 5 or lower)
-        if (status.priority >= 2 && profClassMap[room.id]) {
-            const pc = profClassMap[room.id];
-            status = {
-                status: 'occupied',
-                reason: pc.subject_name || 'Professor Class',
-                faculty: pc.professor_name,
-                subjectCode: pc.subject_code,
-                classId: pc.id,
-                priority: 2
-            };
+        // 2. Course Session (if priority 5 or lower)
+        if (status.priority >= 2 && sessionMap[room.id]) {
+            const s = sessionMap[room.id];
+            status = { status: 'occupied', reason: s.course_name, faculty: s.professor_name, courseCode: s.course_code, sessionId: s.id, priority: 2 };
         }
 
         // 3. Reservation (if priority 5 or lower)
         if (status.priority >= 3 && reservationMap[room.id]) {
-            const res = reservationMap[room.id];
+            const r = reservationMap[room.id];
             status = {
                 status: 'reserved',
-                reason: res.purpose || 'Reserved',
-                bookedBy: res.booked_by,
+                reason: r.purpose,
+                bookedBy: r.booked_by,
                 priority: 3
             };
         }
 
-        // 4. Default Timetable (if priority 5 or lower)
+        // 4. Master Timetable (if priority 5 or lower)
         if (status.priority >= 4 && timetableMap[room.id]) {
-            const tt = timetableMap[room.id];
+            const t = timetableMap[room.id];
             status = {
                 status: 'occupied',
-                reason: tt.subject,
-                faculty: tt.faculty,
+                reason: t.course_name || t.faculty,
+                faculty: t.professor_name || t.faculty,
+                courseCode: t.course_code,
                 priority: 4
             };
         }
@@ -267,59 +283,57 @@ async function getAvailableSlotsForRoom(roomId, date) {
 }
 
 /**
- * Check for booking conflicts (checks all priority layers)
+ * Advanced Clash Detection Algorithm
  */
-async function checkConflict(roomId, slotId, date) {
-    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(date).getDay()];
+async function checkStudentClash(studentId, slotId, day, academicYear) {
+    const clash = await prepare(`
+        SELECT st.*, c.name as course_name
+        FROM student_timetables st
+        LEFT JOIN courses c ON st.course_id = c.id
+        WHERE st.student_id = ? AND st.slot_id = ? AND st.day = ? AND st.academic_year = ?
+    `).get(studentId, slotId, day, academicYear);
+    return clash ? { hasClash: true, details: `Clash with ${clash.course_name || clash.subject_name}` } : { hasClash: false };
+}
 
-    // Check professor_classes (Priority 2)
-    const profConflict = await prepare(`
-        SELECT pc.*, u.full_name as professor_name, s.name as subject_name
-        FROM professor_classes pc
-        JOIN users u ON pc.professor_id = u.id
-        LEFT JOIN subjects s ON pc.subject_id = s.id
-        WHERE pc.room_id = ? AND pc.slot_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
-    `).get(roomId, slotId, date);
+async function checkProfessorClash(professorId, slotId, date) {
+    const sessionClash = await prepare(`
+        SELECT cs.*, c.name as course_name
+        FROM course_sessions cs
+        JOIN courses c ON cs.course_id = c.id
+        WHERE c.professor_id = ? AND cs.slot_id = ? AND cs.date = ?::DATE AND cs.status = 'scheduled'
+    `).get(professorId, slotId, date);
 
-    if (profConflict) {
-        return {
-            hasConflict: true,
-            type: 'professor_class',
-            details: `Professor class: ${profConflict.subject_name || 'Class'} by ${profConflict.professor_name}`
-        };
+    if (sessionClash) return { hasClash: true, details: `Professor already busy with ${sessionClash.course_name}` };
+
+    const d = new Date(date);
+    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()];
+    const academicYear = await getSystemConfig('current_academic_year');
+
+    const masterClash = await prepare(`
+        SELECT t.*, c.name as course_name
+        FROM timetable t
+        JOIN courses c ON t.course_id = c.id
+        WHERE c.professor_id = ? AND t.slot_id = ? AND t.day = ? AND t.academic_year = ?
+    `).get(professorId, slotId, day, academicYear);
+
+    return masterClash ? { hasClash: true, details: `Professor has a master schedule class: ${masterClash.course_name}` } : { hasClash: false };
+}
+
+async function checkRoomClash(roomId, slotId, date) {
+    const status = await getRoomStatus(roomId, slotId, null, date); // getRoomStatus already handles day internally
+    if (status.status !== 'available') {
+        return { hasClash: true, details: `Room is ${status.status} due to: ${status.reason}` };
     }
-
-    // Check timetable (Priority 4)
-    const timetableConflict = await prepare('SELECT * FROM timetable WHERE room_id = ? AND slot_id = ? AND day = ?').get(roomId, slotId, day);
-    if (timetableConflict) {
-        return {
-            hasConflict: true,
-            type: 'timetable',
-            details: `Regular class: ${timetableConflict.subject} by ${timetableConflict.faculty}`
-        };
-    }
-
-    // Check reservations (Priority 3)
-    const reservationConflict = await prepare('SELECT * FROM reservations WHERE room_id = ? AND slot_id = ? AND date = ?::DATE').get(roomId, slotId, date);
-    if (reservationConflict) {
-        return {
-            hasConflict: true,
-            type: 'reservation',
-            details: `Already reserved: ${reservationConflict.purpose} by ${reservationConflict.booked_by}`
-        };
-    }
-
-    return { hasConflict: false };
+    return { hasClash: false };
 }
 
 async function clearExpiredOverrides() {
     const now = new Date().toISOString();
     const rooms = await prepare('SELECT id FROM classrooms WHERE override_expires IS NOT NULL AND override_expires < ?').all(now);
 
-    await Promise.all(rooms.map(async (room) => {
+    for (const room of rooms) {
         await prepare('UPDATE classrooms SET status_override = NULL, override_expires = NULL WHERE id = ?').run(room.id);
-    }));
-
+    }
     return rooms.length;
 }
 
@@ -330,8 +344,11 @@ module.exports = {
     getTodayDate,
     getRoomStatus,
     getAllRoomsWithStatus,
-    checkConflict,
+    checkStudentClash,
+    checkProfessorClash,
+    checkRoomClash,
     clearExpiredOverrides,
+    getSystemConfig,
+    isEnrollmentFrozen,
     getAvailableSlotsForRoom
 };
-
