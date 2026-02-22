@@ -240,26 +240,33 @@
             errEl.style.display = 'none';
             btn.disabled = true; btn.textContent = 'Signing in...';
 
-            const { ok, data } = await API.post('/api/auth/login', {
-                username: document.getElementById('username').value.trim(),
-                password: document.getElementById('password').value
-            });
+            try {
+                const { ok, data } = await API.post('/api/auth/login', {
+                    username: document.getElementById('username').value.trim(),
+                    password: document.getElementById('password').value
+                });
 
-            if (ok && data.token) {
-                localStorage.setItem('campus_token', data.token);
-                localStorage.setItem('campus_user', JSON.stringify(data.user));
-                localStorage.setItem('campus_role', data.user.role);
+                if (ok && data.token) {
+                    localStorage.setItem('campus_token', data.token);
+                    localStorage.setItem('campus_user', JSON.stringify(data.user));
+                    localStorage.setItem('campus_role', data.user.role);
 
-                // Redirect to respective application dashboards
-                if (data.user.role === 'admin') {
-                    window.location.href = '/admin/dashboard.html';
-                } else if (data.user.role === 'professor') {
-                    window.location.href = '/professor/dashboard.html';
+                    // Redirect to respective application dashboards
+                    if (data.user.role === 'admin') {
+                        window.location.href = '/admin';
+                    } else if (data.user.role === 'professor') {
+                        window.location.href = '/professor';
+                    } else {
+                        window.location.href = '/student';
+                    }
                 } else {
-                    window.location.href = '/student/dashboard.html';
+                    errEl.textContent = data.error || 'Login failed';
+                    errEl.style.display = 'block';
+                    btn.disabled = false; btn.textContent = 'Sign In';
                 }
-            } else {
-                errEl.textContent = data.error || 'Login failed';
+            } catch (err) {
+                console.error('Login Error:', err);
+                errEl.textContent = 'Connection error. Please try again.';
                 errEl.style.display = 'block';
                 btn.disabled = false; btn.textContent = 'Sign In';
             }
