@@ -313,6 +313,10 @@
             <div class="stat-card">
                 <div class="stat-value" id="stat-students">–</div>
                 <div class="stat-label">Enrolled Students</div>
+                <div class="stat-card" style="border-color:rgba(234,179,8,0.3)">
+                    <div class="stat-value" id="stat-pending" style="color:#fbbf24">–</div>
+                    <div class="stat-label">Pending Approvals</div>
+                </div>
             </div>
         </div>
         <div class="grid-2">
@@ -324,10 +328,25 @@
                 </div>
             </div>
             <div class="panel">
-                <div class="section-title">📚 My Subjects</div>
+                <div class="section-title">📚 My Subjects
+                    <a href="/professor/schedule"
+                        style="font-size:0.8rem;color:#6c63ff;font-weight:400;text-decoration:none">+ Add Course</a>
+                </div>
                 <div id="subjects-list">
                     <div class="empty">Loading...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Enrollment Approval Panel -->
+        <div class="panel" id="approval-panel" style="margin-top:1.5rem;display:none">
+            <div class="section-title">📝 Enrollment Requests Awaiting Approval
+                <button onclick="loadApprovals()"
+                    style="font-size:0.78rem;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:4px 10px;border-radius:6px;cursor:pointer">↻
+                    Refresh</button>
+            </div>
+            <div id="approvals-list">
+                <div class="empty">Loading...</div>
             </div>
         </div>
     </main>
@@ -352,6 +371,9 @@
                     document.getElementById('stat-total').textContent = dash.stats.totalScheduled || 0;
                     document.getElementById('stat-subjects').textContent = dash.stats.courses || 0;
                     document.getElementById('stat-students').textContent = dash.stats.enrolledStudents || 0;
+                    const pending = dash.stats.pendingApprovals || 0;
+                    document.getElementById('stat-pending').textContent = pending;
+                    if (pending > 0) { document.getElementById('approval-panel').style.display = 'block'; }
                 }
 
                 if (sessions) {
@@ -374,11 +396,53 @@
                         : courses.map(c => `
                             <div class="subject-item">
                                 <div><span class="subject-code">${c.code}</span> <span style="margin-left:8px;font-size:0.9rem">${c.name}</span></div>
+                                <div style="font-size:0.78rem;color:rgba(255,255,255,0.4)">
+                                    👥 ${c.enrolled_count || 0}/${c.max_capacity || '∞'}
+                                    ${c.pending_count > 0 ? `<span style="color:#fbbf24;margin-left:8px">⏳ ${c.pending_count} pending</span>` : ''}
+                                </div>
                             </div>`).join('');
                 }
+
+                loadApprovals();
             } catch (err) {
                 console.error('Dash load failed:', err);
             }
+        }
+
+        async function loadApprovals() {
+            try {
+                const requests = await API.get('/api/professor/enrollment-requests');
+                const el = document.getElementById('approvals-list');
+                if (!requests || requests.length === 0) { el.innerHTML = '<div class="empty">No pending requests 🎉</div>'; return; }
+                document.getElementById('approval-panel').style.display = 'block';
+                el.innerHTML = requests.map(r => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:8px;border-left:3px solid #fbbf24">
+                        <div>
+                            <div style="font-weight:600;font-size:0.9rem">${r.student_name} <span style="color:rgba(255,255,255,0.4);font-weight:400">→</span> ${r.course_code}</div>
+                            <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-top:3px">Enrolled: ${r.enrolled_count}/${r.max_capacity || '∞'} · Requested ${new Date(r.requested_at).toLocaleDateString()}</div>
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn-sm" style="background:rgba(16,185,129,0.2);color:#6ee7b7;border:1px solid rgba(16,185,129,0.3)" onclick="approveRequest(${r.id})">✓ Approve</button>
+                            <button class="btn-sm btn-cancel" onclick="rejectRequest(${r.id})">✗ Reject</button>
+                        </div>
+                    </div>`);
+            } catch (err) {
+                console.error('Load approvals failed:', err);
+            }
+        }
+
+        async function approveRequest(id) {
+            const { ok, data } = await API.put(`/api/professor/enrollment-requests/${id}/approve`, {});
+            if (ok) { loadDashboard(); }
+            else alert(data.error || 'Failed to approve');
+        }
+
+        async function rejectRequest(id) {
+            const reason = prompt('Reason for rejection (optional):');
+            if (reason === null) return;
+            const { ok, data } = await API.put(`/api/professor/enrollment-requests/${id}/reject`, { reason });
+            if (ok) { loadApprovals(); }
+            else alert(data.error || 'Failed to reject');
         }
 
         async function cancelSession(id) {

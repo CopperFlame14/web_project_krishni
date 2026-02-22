@@ -6,12 +6,23 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const { initDB } = require('./database/db');
 
+// SECURITY: Verify JWT_SECRET before doing anything else
+require('./services/authService'); // will process.exit(1) if JWT_SECRET missing
+
 const app = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000').split(',');
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile/curl/same-server)
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -28,7 +39,8 @@ const timetableRoutes = require('./routes/timetable');
 const studentRoutes = require('./routes/student');
 const professorRoutes = require('./routes/professor');
 const enrollmentRoutes = require('./routes/enrollments');
-const adminRoutes = require('./routes/admin'); // Added
+const adminRoutes = require('./routes/admin');
+const noiseRoutes = require('./routes/noise');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/blocks', blockRoutes);
@@ -38,7 +50,8 @@ app.use('/api/timetable', timetableRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/professor', professorRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
-app.use('/api/admin', adminRoutes); // Added
+app.use('/api/admin', adminRoutes);
+app.use('/api/noise', noiseRoutes);
 
 // Floors → classrooms (delegated to classrooms router)
 app.get('/api/floors/:floorId/classrooms', (req, res) => {
@@ -91,6 +104,7 @@ app.get('/room', (req, res) => res.sendFile(path.join(__dirname, 'public', 'room
 app.get('/student', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'dashboard.html')));
 app.get('/student/timetable', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'timetable.html')));
 app.get('/student/notifications', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'notifications.html')));
+app.get('/student/enrollment', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'enrollment.html')));
 
 // Professor pages
 app.get('/professor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'professor', 'dashboard.html')));

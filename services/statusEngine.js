@@ -1,4 +1,5 @@
 const { initDB, prepare } = require('../database/db');
+const { enrichRoomsWithNoise } = require('./noiseEngine');
 
 let dbInitialized = false;
 
@@ -260,7 +261,8 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
         };
     });
 
-    return roomsWithStatus;
+    // Enrich with noise scores
+    return enrichRoomsWithNoise(roomsWithStatus);
 }
 
 

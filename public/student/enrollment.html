@@ -4,162 +4,590 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Course Enrollment - Smart Campus</title>
-    <link rel="stylesheet" href="../styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Course Enrollment – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .enroll-container {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .course-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(167, 139, 250, 0.15);
+            color: #a78bfa;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-info {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #a78bfa;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        /* Freeze banner */
+        .alert-banner {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .alert-banner.frozen {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-banner.info {
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-btn {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: #a78bfa;
+            color: #a78bfa;
+            font-weight: 600;
+        }
+
+        /* Course cards */
+        .course-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
             margin-bottom: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: border-color 0.2s;
         }
 
-        .course-info h3 {
-            margin: 0;
-            color: #6366f1;
+        .course-card:hover {
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        .course-card.enrolled-card {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .course-card.pending-card {
+            border-color: rgba(234, 179, 8, 0.3);
+        }
+
+        .course-card.full-card {
+            opacity: 0.6;
+        }
+
+        .course-card.closed-card {
+            opacity: 0.6;
+        }
+
+        .course-code-badge {
+            background: rgba(108, 99, 255, 0.2);
+            color: #a78bfa;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .course-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 4px 0;
         }
 
         .course-meta {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .course-meta span {
+            margin-right: 12px;
+        }
+
+        .capacity-bar {
+            width: 120px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .capacity-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: #a78bfa;
+            transition: width 0.5s;
+        }
+
+        .capacity-fill.full {
+            background: #ef4444;
+        }
+
+        .capacity-label {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+        }
+
+        .window-badge {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .window-badge.open {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .window-badge.not_open {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fde68a;
+        }
+
+        .window-badge.closed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
         }
 
         .enroll-btn {
-            background: #6366f1;
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
             color: white;
             border: none;
             padding: 0.6rem 1.2rem;
-            border-radius: 0.5rem;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
         }
 
-        .enroll-btn.enrolled {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            cursor: default;
+        .enroll-btn:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+
+        .enroll-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
 
         .unenroll-btn {
             background: none;
             color: #ef4444;
-            border: 1px solid #ef4444;
-            padding: 0.4rem 0.8rem;
-            border-radius: 0.4rem;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
 
-        .freeze-warning {
+        .unenroll-btn:hover {
             background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 2rem;
-            display: none;
+        }
+
+        .status-badge {
+            display: block;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .status-badge.enrolled {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .status-badge.pending {
+            background: rgba(234, 179, 8, 0.2);
+            color: #fde68a;
+        }
+
+        .empty {
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            padding: 3rem;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            color: rgba(255, 255, 255, 0.4);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .course-card {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="enroll-container">
-        <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-            <h1>Course Enrollment</h1>
-            <a href="/student" class="nav-link">Back to Dashboard</a>
-        </header>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/student" class="nav-item"><span>🏠</span> Dashboard</a>
+        <a href="/student/timetable" class="nav-item"><span>📅</span> My Timetable</a>
+        <a href="/student/enrollment" class="nav-item active"><span>📚</span> Enrollment</a>
+        <a href="/student/notifications" class="nav-item"><span>🔔</span> Notifications</a>
+        <a href="/" class="nav-item"><span>🏛️</span> Room Availability</a>
+        <div class="sidebar-bottom">
+            <div class="user-info">
+                <div class="user-name" id="sidebar-name">Loading...</div>
+                <div class="user-role">🎓 Student</div>
+            </div>
+            <button class="logout-btn" onclick="API.logout()">Sign Out</button>
+        </div>
+    </nav>
 
-        <div id="freeze-msg" class="freeze-warning">
-            <strong>System Locked:</strong> Enrollment modifications are currently disabled by administration.
+    <main class="main">
+        <div class="topbar">
+            <div class="page-title" id="page-title">Course Enrollment</div>
         </div>
 
-        <div id="course-list">
-            <p>Loading available courses...</p>
+        <div id="freeze-banner" class="alert-banner frozen">
+            <strong>🔒 Enrollment Locked:</strong> The admin has temporarily frozen all enrollment modifications.
         </div>
-    </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-available" onclick="switchTab('available')">📋 Available
+                Courses</button>
+            <button class="tab-btn" id="tab-enrolled" onclick="switchTab('enrolled')">✅ My Enrollments</button>
+            <button class="tab-btn" id="tab-pending" onclick="switchTab('pending')">⏳ Pending Requests <span
+                    id="pending-count-badge"></span></button>
+        </div>
+
+        <div id="tab-content">
+            <div class="loading">Loading courses...</div>
+        </div>
+    </main>
 
     <script src="/js/api.js"></script>
     <script>
         if (!API.requireAuth('student')) { }
-        let myEnrollments = [];
+        const user = API.getUser();
+        if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
+
+        let allCourses = [], myEnrollmentIds = [], pendingRequestIds = [], activeTab = 'available';
 
         async function init() {
             try {
-                const [courses, enrolled, dash] = await Promise.all([
+                const [courses, enrollments, requests] = await Promise.all([
                     API.get('/api/enrollments/courses'),
                     API.get('/api/enrollments'),
-                    API.get('/api/student/dashboard')
+                    API.get('/api/enrollments/requests')
                 ]);
 
-                if (dash && dash.academicYear) {
-                    document.querySelector('h1').innerText = `Course Enrollment (${dash.academicYear})`;
-                }
+                allCourses = courses || [];
+                myEnrollmentIds = (enrollments || []).map(e => e.course_id);
+                pendingRequestIds = (requests || []).filter(r => r.status === 'pending').map(r => r.course_id);
 
-                myEnrollments = enrolled.map(e => e.course_id);
-                renderCourses(courses);
+                const pendingCount = (requests || []).filter(r => r.status === 'pending').length;
+                document.getElementById('pending-count-badge').textContent = pendingCount > 0 ? `(${pendingCount})` : '';
+
+                // Show frozen banner if attempt was made
+                renderTab(activeTab, enrollments, requests);
             } catch (err) {
                 console.error(err);
+                document.getElementById('tab-content').innerHTML = '<div class="empty">Failed to load courses. Please try again.</div>';
             }
         }
 
-        function renderCourses(courses) {
-            const list = document.getElementById('course-list');
-            if (courses.length === 0) {
-                list.innerHTML = '<p>No courses available for enrollment.</p>';
-                return;
-            }
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            init(); // re-fetch fresh data on tab switch
+        }
 
-            list.innerHTML = courses.map(c => {
-                const isEnrolled = myEnrollments.includes(c.id);
-                return `
-                    <div class="course-card">
-                        <div class="course-info">
-                            <h3>${c.code}: ${c.name}</h3>
-                            <div class="course-meta">Professor: ${c.professor_name} • Semester: ${c.semester}</div>
-                            <div class="course-meta">Enrolled: ${c.enrolled_count} students</div>
+        function renderTab(tab, enrollments, requests) {
+            const el = document.getElementById('tab-content');
+            if (tab === 'available') {
+                renderAvailable(el);
+            } else if (tab === 'enrolled') {
+                renderEnrolled(el, enrollments || []);
+            } else if (tab === 'pending') {
+                renderPending(el, requests || []);
+            }
+        }
+
+        function renderAvailable(el) {
+            if (!allCourses.length) { el.innerHTML = '<div class="empty">No courses available for enrollment.</div>'; return; }
+            el.innerHTML = allCourses.map(c => {
+                const isEnrolled = myEnrollmentIds.includes(c.id);
+                const isPending = pendingRequestIds.includes(c.id);
+                const isFull = c.max_capacity && c.spots_left <= 0;
+                const fillPct = c.max_capacity ? Math.min(100, Math.round(((c.enrolled_count || 0) / c.max_capacity) * 100)) : 0;
+                const windowClosed = c.window_status === 'closed';
+                const windowNotOpen = c.window_status === 'not_open';
+
+                let actionBtn = '';
+                if (isEnrolled) {
+                    actionBtn = `<div><span class="status-badge enrolled">✅ Enrolled</span><button class="unenroll-btn" onclick="unenroll('${c.id}')">Unenroll</button></div>`;
+                } else if (isPending) {
+                    actionBtn = `<span class="status-badge pending">⏳ Pending Approval</span>`;
+                } else if (isFull) {
+                    actionBtn = `<button class="enroll-btn" disabled>Course Full</button>`;
+                } else if (windowClosed) {
+                    actionBtn = `<button class="enroll-btn" disabled>Enrollment Closed</button>`;
+                } else if (windowNotOpen) {
+                    actionBtn = `<button class="enroll-btn" disabled>Not Open Yet</button>`;
+                } else {
+                    actionBtn = `<button class="enroll-btn" onclick="enroll('${c.id}')">Enroll Now</button>`;
+                }
+
+                let windowBadge = '';
+                if (c.enrollment_open_at || c.enrollment_close_at) {
+                    windowBadge = `<span class="window-badge ${c.window_status || 'open'}">
+                        ${c.window_status === 'open' ? '🟢 Open' : c.window_status === 'not_open' ? '🟡 Opens ' + new Date(c.enrollment_open_at).toLocaleDateString() : '🔴 Closed'}
+                    </span>`;
+                }
+
+                return `<div class="course-card ${isEnrolled ? 'enrolled-card' : isPending ? 'pending-card' : isFull ? 'full-card' : windowClosed ? 'closed-card' : ''}">
+                    <div>
+                        <div style="margin-bottom:6px"><span class="course-code-badge">${c.code}</span></div>
+                        <div class="course-title">${c.name}</div>
+                        <div class="course-meta">
+                            <span>👤 ${c.professor_name}</span>
+                            <span>📅 Semester ${c.semester}</span>
                         </div>
-                        <div class="course-actions">
-                            ${isEnrolled
-                        ? `<div style="text-align:right">
-                                     <span class="badge badge-active enrolled" style="display:block; margin-bottom:0.5rem">Enrolled</span>
-                                     <button class="unenroll-btn" onclick="unenroll('${c.id}')">Unenroll</button>
-                                   </div>`
-                        : `<button class="enroll-btn" onclick="enroll('${c.id}')">Enroll Now</button>`
-                    }
+                        <div class="course-meta" style="margin-top:4px">
+                            ${c.max_capacity ? `<span>👥 ${c.enrolled_count || 0}/${c.max_capacity} enrolled</span>` : ''}
+                            ${!c.auto_approve ? '<span>📝 Requires Approval</span>' : ''}
                         </div>
+                        ${c.max_capacity ? `<div class="capacity-bar"><div class="capacity-fill ${isFull ? 'full' : ''}" style="width:${fillPct}%"></div></div>
+                        <div class="capacity-label">${isFull ? 'Full' : `${c.spots_left} spots left`}</div>` : ''}
+                        ${windowBadge}
                     </div>
-                `;
+                    <div>${actionBtn}</div>
+                </div>`;
             }).join('');
+        }
+
+        function renderEnrolled(el, enrollments) {
+            if (!enrollments.length) { el.innerHTML = '<div class="empty">You have not enrolled in any courses yet.</div>'; return; }
+            el.innerHTML = enrollments.map(e => `
+                <div class="course-card enrolled-card">
+                    <div>
+                        <div style="margin-bottom:4px"><span class="course-code-badge">${e.course_code}</span></div>
+                        <div class="course-title">${e.course_name}</div>
+                        <div class="course-meta"><span>👤 ${e.professor_name}</span></div>
+                    </div>
+                    <div>
+                        <span class="status-badge enrolled">✅ Enrolled</span>
+                        <button class="unenroll-btn" onclick="unenroll('${e.course_id}')">Unenroll</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderPending(el, requests) {
+            const pending = requests.filter(r => r.status === 'pending');
+            const resolved = requests.filter(r => r.status !== 'pending');
+            let html = '';
+            if (pending.length) html += `<div style="font-weight:600;margin-bottom:0.75rem;color:rgba(255,255,255,0.6)">⏳ Awaiting Approval</div>`;
+            html += pending.map(r => `
+                <div class="course-card pending-card">
+                    <div>
+                        <span class="course-code-badge">${r.course_code}</span>
+                        <div class="course-title">${r.course_name}</div>
+                        <div class="course-meta">👤 ${r.professor_name} • Requested ${new Date(r.requested_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="status-badge pending">⏳ Pending</span>
+                </div>`).join('');
+            if (resolved.length) html += `<div style="font-weight:600;margin:1rem 0 0.75rem;color:rgba(255,255,255,0.6)">📋 Resolved</div>`;
+            html += resolved.map(r => `
+                <div class="course-card" style="opacity:0.7">
+                    <div>
+                        <span class="course-code-badge">${r.course_code}</span>
+                        <div class="course-title">${r.course_name}</div>
+                        <div class="course-meta">Resolved ${new Date(r.resolved_at || r.requested_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="status-badge ${r.status === 'approved' ? 'enrolled' : ''}" style="${r.status === 'rejected' ? 'background:rgba(239,68,68,0.2);color:#fca5a5' : ''}">${r.status === 'approved' ? '✅ Approved' : '❌ Rejected'}</span>
+                </div>`).join('');
+            if (!pending.length && !resolved.length) html = '<div class="empty">No enrollment requests found.</div>';
+            el.innerHTML = html;
         }
 
         async function enroll(courseId) {
             const { ok, data } = await API.post('/api/enrollments', { courseId });
-            if (ok) init();
-            else {
-                if (data.error === 'System Frozen') document.getElementById('freeze-msg').style.display = 'block';
-                alert(data.message || data.error);
+            if (ok) {
+                const banner = document.getElementById('freeze-banner');
+                banner.style.display = 'none';
+                if (data.status === 'pending') {
+                    document.getElementById('freeze-banner').style.display = 'none';
+                    showToast('⏳ Request submitted — awaiting professor approval.', 'info');
+                } else {
+                    showToast('✅ Enrolled successfully! Timetable updated.', 'success');
+                }
+                init();
+            } else {
+                if (data.error && data.error.includes('Frozen')) {
+                    document.getElementById('freeze-banner').style.display = 'block';
+                }
+                showToast('❌ ' + (data.error || 'Enrollment failed'), 'error');
             }
         }
 
         async function unenroll(courseId) {
-            if (!confirm('Are you sure you want to unenroll?')) return;
+            if (!confirm('Unenroll from this course? This will also remove timetable entries.')) return;
             const { ok, data } = await API.delete(`/api/enrollments/${courseId}`);
-            if (ok) init();
-            else alert(data.message || data.error);
+            if (ok) { showToast('Unenrolled and timetable updated.', 'success'); init(); }
+            else showToast('❌ ' + (data.error || 'Failed'), 'error');
+        }
+
+        function showToast(msg, type = 'info') {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;bottom:1.5rem;right:1.5rem;padding:0.9rem 1.4rem;border-radius:12px;
+                font-size:0.9rem;z-index:9999;animation:fadeIn 0.3s ease;
+                background:${type === 'success' ? 'rgba(16,185,129,0.9)' : type === 'error' ? 'rgba(239,68,68,0.9)' : 'rgba(59,130,246,0.9)'};color:#fff;`;
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
         }
 
         init();
     </script>
+    <style>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 
 </html>

@@ -1,29 +1,29 @@
 const { prepare } = require('../database/db');
-const { checkProfessorClash, checkRoomClash } = require('./statusEngine');
+const { checkProfessorTimeClash, checkClassroomDoubleBook } = require('./clashEngine');
 const { notifyEnrolledStudents } = require('./notificationEngine');
 
 /**
  * Schedule a new course session
  */
 async function scheduleSession({ professorId, courseId, roomId, slotId, date, notes }) {
-    // 1. Validate constraints
-    const roomClash = await checkRoomClash(roomId, slotId, date);
+    // 1. Validate with proper time-range overlap detection
+    const roomClash = await checkClassroomDoubleBook(roomId, slotId, date);
     if (roomClash.hasClash) throw new Error(`Room Conflict: ${roomClash.details}`);
 
-    const profClash = await checkProfessorClash(professorId, slotId, date);
+    const profClash = await checkProfessorTimeClash(professorId, slotId, date);
     if (profClash.hasClash) throw new Error(`Professor Conflict: ${profClash.details}`);
 
-    // 2. Insert session (using PostgreSQL UUID support)
+    // 2. Insert session
     const result = await prepare(`
         INSERT INTO course_sessions (course_id, room_id, slot_id, date, notes, status)
-        VALUES (?, ?, ?, ?::DATE, ?, 'scheduled')
+        VALUES ($1, $2, $3, $4::DATE, $5, 'scheduled')
         RETURNING id
     `).run(courseId, roomId, slotId, date, notes || null);
 
     const sessionId = result.lastInsertRowid;
 
     // 3. Notify enrolled students
-    const course = await prepare('SELECT name, code FROM courses WHERE id = ?').get(courseId);
+    const course = await prepare('SELECT name, code FROM courses WHERE id = $1').get(courseId);
     if (course) {
         await notifyEnrolledStudents(
             courseId,
@@ -41,20 +41,18 @@ async function scheduleSession({ professorId, courseId, roomId, slotId, date, no
  * Cancel an existing course session
  */
 async function cancelSession(sessionId, professorId) {
-    // Verify ownership
     const session = await prepare(`
         SELECT cs.*, c.professor_id, c.name as course_name, c.code as course_code
         FROM course_sessions cs
         JOIN courses c ON cs.course_id = c.id
-        WHERE cs.id = ?
+        WHERE cs.id = $1
     `).get(sessionId);
 
     if (!session) throw new Error('Session not found');
     if (session.professor_id !== professorId) throw new Error('Unauthorized');
 
-    await prepare("UPDATE course_sessions SET status = 'cancelled' WHERE id = ?").run(sessionId);
+    await prepare("UPDATE course_sessions SET status = 'cancelled' WHERE id = $1").run(sessionId);
 
-    // Notify students
     await notifyEnrolledStudents(
         session.course_id,
         sessionId,
@@ -74,26 +72,25 @@ async function rescheduleSession(sessionId, { professorId, newRoomId, newSlotId,
         SELECT cs.*, c.professor_id, c.name as course_name, c.code as course_code
         FROM course_sessions cs
         JOIN courses c ON cs.course_id = c.id
-        WHERE cs.id = ?
+        WHERE cs.id = $1
     `).get(sessionId);
 
     if (!session) throw new Error('Session not found');
     if (session.professor_id !== professorId) throw new Error('Unauthorized');
 
-    // Validate new slot
-    const roomClash = await checkRoomClash(newRoomId, newSlotId, newDate);
+    // Validate new slot with time-range overlap, excluding current session
+    const roomClash = await checkClassroomDoubleBook(newRoomId, newSlotId, newDate, sessionId);
     if (roomClash.hasClash) throw new Error(`Room Conflict: ${roomClash.details}`);
 
-    const profClash = await checkProfessorClash(professorId, newSlotId, newDate);
+    const profClash = await checkProfessorTimeClash(professorId, newSlotId, newDate, sessionId);
     if (profClash.hasClash) throw new Error(`Professor Conflict: ${profClash.details}`);
 
     await prepare(`
-        UPDATE course_sessions 
-        SET room_id = ?, slot_id = ?, date = ?::DATE, status = 'rescheduled'
-        WHERE id = ?
+        UPDATE course_sessions
+        SET room_id = $1, slot_id = $2, date = $3::DATE, status = 'rescheduled'
+        WHERE id = $4
     `).run(newRoomId, newSlotId, newDate, sessionId);
 
-    // Notify students
     await notifyEnrolledStudents(
         session.course_id,
         sessionId,
@@ -107,30 +104,27 @@ async function rescheduleSession(sessionId, { professorId, newRoomId, newSlotId,
 
 async function getProfessorSessions(professorId, filters = {}) {
     let sql = `
-        SELECT cs.*, c.name as course_name, c.code as course_code, ts.label as slot_label
+        SELECT cs.*, c.name as course_name, c.code as course_code,
+               ts.label as slot_label, ts.start_time, ts.end_time
         FROM course_sessions cs
         JOIN courses c ON cs.course_id = c.id
         JOIN time_slots ts ON cs.slot_id = ts.id
-        WHERE c.professor_id = ?
+        WHERE c.professor_id = $1
     `;
     const params = [professorId];
+    let idx = 2;
 
     if (filters.date) {
-        sql += " AND cs.date = ?::DATE";
+        sql += ` AND cs.date::DATE = $${idx++}::DATE`;
         params.push(filters.date);
     }
     if (filters.status) {
-        sql += " AND cs.status = ?";
+        sql += ` AND cs.status = $${idx++}`;
         params.push(filters.status);
     }
 
-    sql += " ORDER BY cs.date DESC, cs.slot_id ASC";
+    sql += ' ORDER BY cs.date DESC, ts.start_time ASC';
     return await prepare(sql).all(...params);
 }
 
-module.exports = {
-    scheduleSession,
-    cancelSession,
-    rescheduleSession,
-    getProfessorSessions
-};
+module.exports = { scheduleSession, cancelSession, rescheduleSession, getProfessorSessions };
