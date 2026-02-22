@@ -1,10 +1,19 @@
 const { initDB, prepare, exec } = require('./db');
+const fs = require('fs');
+const path = require('path');
 
 async function seed() {
     console.log('🌱 Seeding database (Smart Campus Phase 2)...');
 
     try {
         await initDB();
+
+        // 1. Run Schema Setup first (Automated for Render/Production)
+        console.log('📜 Applying schema...');
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+        await exec(schemaSql);
+        console.log('✅ Schema applied successfully');
 
         // Clear existing data (Order matters for foreign keys)
         console.log('🧹 Clearing existing data...');
