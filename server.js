@@ -39,11 +39,22 @@ app.use('/api/blocks', blockRoutes);
 app.use('/api/classrooms', classroomRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/timetable', timetableRoutes);
+app.use('/api/timeslots', timetableRoutes); // Alias for backward compatibility
 app.use('/api/student', studentRoutes);
 app.use('/api/professor', professorRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/noise', noiseRoutes);
+
+// Compatibility alias for old admin stats
+app.get('/api/admin/stats', (req, res) => {
+    req.url = '/dashboard';
+    adminRoutes(req, res, () => { });
+});
+
+// Fix for CSS MIME type error (serving /styles.css from /css/styles.css)
+app.get('/styles.css', (req, res) => res.sendFile(path.join(__dirname, 'public', 'css', 'styles.css')));
+app.get('/admin/styles.css', (req, res) => res.sendFile(path.join(__dirname, 'public', 'css', 'styles.css')));
 
 // Floors → classrooms (delegated to classrooms router)
 app.get('/api/floors/:floorId/classrooms', (req, res) => {

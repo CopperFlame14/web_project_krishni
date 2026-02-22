@@ -72,8 +72,24 @@ CREATE TABLE IF NOT EXISTS courses (
     professor_id INTEGER NOT NULL REFERENCES users(id),
     academic_year TEXT NOT NULL,
     semester INTEGER NOT NULL,
+    status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'archived')),
+    max_capacity INTEGER DEFAULT 60,
+    auto_approve BOOLEAN DEFAULT TRUE,
+    enrollment_open_at TIMESTAMPTZ,
+    enrollment_close_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(code, academic_year, semester)
+);
+
+-- 6.1 Enrollment Requests (Pending Approval)
+CREATE TABLE IF NOT EXISTS enrollment_requests (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES users(id),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+    requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMPTZ,
+    UNIQUE(student_id, course_id)
 );
 
 -- 7. Enrollments

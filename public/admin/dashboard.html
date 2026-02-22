@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Governance Portal - Smart Campus</title>
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -274,8 +274,13 @@
         }
 
         async function loadTabData() {
-            const data = await API.get(`/api/admin/${currentTab}`);
-            if (data) renderTable(data);
+            try {
+                const data = await API.get(`/api/admin/${currentTab}`);
+                if (data && !data.error) renderTable(data);
+                else if (data && data.error) console.error('API Error:', data.error);
+            } catch (err) {
+                console.error('Fetch error:', err);
+            }
         }
 
         function switchTab(tab) {
@@ -298,6 +303,11 @@
             const body = document.getElementById('table-body');
             head.innerHTML = '';
             body.innerHTML = '';
+
+            if (!Array.isArray(data)) {
+                body.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#fca5a5;padding:2rem;">⚠️ Failed to load data. The database might need a migration (migrate_v4.sql).</td></tr>`;
+                return;
+            }
 
             if (currentTab === 'professors') {
                 head.innerHTML = '<th>Name</th><th>Email</th><th>Courses</th>';
