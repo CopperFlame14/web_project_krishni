@@ -129,6 +129,7 @@ async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
 }
 
 async function getAllRoomsWithStatus(slotId = null, date = null) {
+    await ensureDB();
     const rooms = await prepare('SELECT * FROM classrooms ORDER BY block, floor, id').all();
 
     let targetSlotId = null;
@@ -148,19 +149,104 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
         targetDate = getTodayDate();
     }
 
-    const roomsWithStatus = await Promise.all(rooms.map(async (room) => {
-        const statusInfo = await getRoomStatus(room.id, targetSlotId, targetDay, targetDate);
+    if (!targetSlotId) {
+        return rooms.map(r => ({
+            ...r,
+            amenities: r.amenities ? JSON.parse(r.amenities) : [],
+            currentStatus: 'available',
+            statusReason: 'Outside class hours',
+            statusDetails: { status: 'available', reason: 'Outside class hours', priority: 5 }
+        }));
+    }
+
+    // Batch fetch data for ALL rooms to improve performance
+    const [profClasses, reservations, timetableEntries] = await Promise.all([
+        prepare(`
+            SELECT pc.*, u.full_name as professor_name, s.name as subject_name, s.code as subject_code
+            FROM professor_classes pc
+            JOIN users u ON pc.professor_id = u.id
+            LEFT JOIN subjects s ON pc.subject_id = s.id
+            WHERE pc.slot_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
+        `).all(targetSlotId, targetDate),
+
+        prepare(`
+            SELECT * FROM reservations
+            WHERE slot_id = ? AND date = ?::DATE
+        `).all(targetSlotId, targetDate),
+
+        prepare(`
+            SELECT * FROM timetable
+            WHERE slot_id = ? AND day = ?
+        `).all(targetSlotId, targetDay)
+    ]);
+
+    // Create lookup maps for O(1) matching
+    const profClassMap = Object.fromEntries(profClasses.map(c => [c.room_id, c]));
+    const reservationMap = Object.fromEntries(reservations.map(r => [r.room_id, r]));
+    const timetableMap = Object.fromEntries(timetableEntries.map(t => [t.room_id, t]));
+
+    const now = new Date();
+
+    const roomsWithStatus = rooms.map(room => {
+        let status = { status: 'available', reason: 'No scheduled classes', priority: 5 };
+
+        // 1. Manual Override
+        if (room.status_override) {
+            let active = true;
+            if (room.override_expires && new Date(room.override_expires) <= now) active = false;
+
+            if (active) {
+                status = { status: room.status_override, reason: 'Manual override', priority: 1 };
+            }
+        }
+
+        // 2. Professor Class (if priority 5 or lower)
+        if (status.priority >= 2 && profClassMap[room.id]) {
+            const pc = profClassMap[room.id];
+            status = {
+                status: 'occupied',
+                reason: pc.subject_name || 'Professor Class',
+                faculty: pc.professor_name,
+                subjectCode: pc.subject_code,
+                classId: pc.id,
+                priority: 2
+            };
+        }
+
+        // 3. Reservation (if priority 5 or lower)
+        if (status.priority >= 3 && reservationMap[room.id]) {
+            const res = reservationMap[room.id];
+            status = {
+                status: 'reserved',
+                reason: res.purpose || 'Reserved',
+                bookedBy: res.booked_by,
+                priority: 3
+            };
+        }
+
+        // 4. Default Timetable (if priority 5 or lower)
+        if (status.priority >= 4 && timetableMap[room.id]) {
+            const tt = timetableMap[room.id];
+            status = {
+                status: 'occupied',
+                reason: tt.subject,
+                faculty: tt.faculty,
+                priority: 4
+            };
+        }
+
         return {
             ...room,
             amenities: room.amenities ? JSON.parse(room.amenities) : [],
-            currentStatus: statusInfo.status,
-            statusReason: statusInfo.reason,
-            statusDetails: statusInfo
+            currentStatus: status.status,
+            statusReason: status.reason,
+            statusDetails: status
         };
-    }));
+    });
 
     return roomsWithStatus;
 }
+
 
 async function getAvailableSlotsForRoom(roomId, date) {
     const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
