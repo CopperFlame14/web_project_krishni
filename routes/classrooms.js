@@ -86,13 +86,13 @@ router.get('/:id', async (req, res) => {
         `).all(room.id, todayDate);
 
         const todayProfClasses = await prepare(`
-            SELECT pc.*, ts.start_time, ts.end_time, ts.label as slot_label,
-                   u.full_name as professor_name, s.name as subject_name
-            FROM professor_classes pc
-            JOIN time_slots ts ON pc.slot_id = ts.id
-            JOIN users u ON pc.professor_id = u.id
-            LEFT JOIN subjects s ON pc.subject_id = s.id
-            WHERE pc.room_id = ? AND pc.date = ?::DATE AND pc.status = 'scheduled'
+            SELECT cs.*, ts.start_time, ts.end_time, ts.label as slot_label,
+                   u.full_name as professor_name, c.name as course_name
+            FROM course_sessions cs
+            JOIN time_slots ts ON cs.slot_id = ts.id
+            JOIN courses c ON cs.course_id = c.id
+            JOIN users u ON c.professor_id = u.id
+            WHERE cs.room_id = ? AND cs.date = ?::DATE AND cs.status = 'scheduled'
             ORDER BY ts.id
         `).all(room.id, todayDate);
 

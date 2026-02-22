@@ -59,22 +59,22 @@ function initWS(httpServer) {
 }
 
 /**
- * Notify all students enrolled in a subject
+ * Notify all students enrolled in a course
  */
-async function notifyEnrolledStudents(subjectId, classId, type, title, message) {
-    const enrollments = await prepare('SELECT student_id FROM enrollments WHERE subject_id = ?').all(subjectId);
+async function notifyEnrolledStudents(courseId, sessionId, type, title, message) {
+    const enrollments = await prepare('SELECT student_id FROM enrollments WHERE course_id = ?').all(courseId);
 
     for (const { student_id } of enrollments) {
         // Insert notification record
         await prepare(`
-            INSERT INTO notifications (user_id, type, title, message, class_id)
+            INSERT INTO notifications (user_id, type, title, message, session_id)
             VALUES (?, ?, ?, ?, ?)
-        `).run(student_id, type, title, message, classId);
+        `).run(student_id, type, title, message, sessionId);
 
         // Push to connected client if online
         const client = connectedClients.get(student_id);
         if (client && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type, title, message, classId, timestamp: new Date().toISOString() }));
+            client.send(JSON.stringify({ type, title, message, sessionId, timestamp: new Date().toISOString() }));
         }
     }
 }
@@ -82,11 +82,11 @@ async function notifyEnrolledStudents(subjectId, classId, type, title, message) 
 /**
  * Send a notification to a specific user
  */
-async function notifyUser(userId, type, title, message, classId = null) {
-    await prepare('INSERT INTO notifications (user_id, type, title, message, class_id) VALUES (?, ?, ?, ?, ?)').run(userId, type, title, message, classId);
+async function notifyUser(userId, type, title, message, sessionId = null) {
+    await prepare('INSERT INTO notifications (user_id, type, title, message, session_id) VALUES (?, ?, ?, ?, ?)').run(userId, type, title, message, sessionId);
     const client = connectedClients.get(userId);
     if (client && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type, title, message, classId, timestamp: new Date().toISOString() }));
+        client.send(JSON.stringify({ type, title, message, sessionId, timestamp: new Date().toISOString() }));
     }
 }
 
