@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,87 +8,223 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
+
         .bg-orbs {
-            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
         }
+
         .orb {
-            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3;
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
             animation: float 8s ease-in-out infinite;
         }
-        .orb-1 { width: 400px; height: 400px; background: #6c63ff; top: -100px; left: -100px; animation-delay: 0s; }
-        .orb-2 { width: 300px; height: 300px; background: #f093fb; bottom: -80px; right: -80px; animation-delay: 3s; }
-        .orb-3 { width: 250px; height: 250px; background: #4facfe; top: 50%; left: 50%; animation-delay: 1.5s; }
-        @keyframes float { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-30px) scale(1.05); } }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #6c63ff;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #f093fb;
+            bottom: -80px;
+            right: -80px;
+            animation-delay: 3s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #4facfe;
+            top: 50%;
+            left: 50%;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-30px) scale(1.05);
+            }
+        }
 
         .container {
-            position: relative; z-index: 1; text-align: center; padding: 2rem;
-            max-width: 600px; width: 100%;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
         }
+
         .logo {
-            font-size: 3rem; margin-bottom: 0.5rem;
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
             animation: pulse 2s ease-in-out infinite;
         }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        h1 {
-            font-size: clamp(2rem, 5vw, 3rem); font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; margin-bottom: 0.5rem;
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
         }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
         .subtitle {
-            color: rgba(255,255,255,0.6); font-size: 1.1rem; margin-bottom: 3rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
             font-weight: 300;
         }
+
         .cards {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
+
         .card {
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 20px; padding: 2.5rem 2rem;
-            cursor: pointer; transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
             backdrop-filter: blur(20px);
-            text-decoration: none; display: block;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+
         .card:hover {
             transform: translateY(-8px);
-            background: rgba(255,255,255,0.13);
-            border-color: rgba(255,255,255,0.3);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
-        .card-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
         .card-title {
-            font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
         }
-        .card-desc { color: rgba(255,255,255,0.5); font-size: 0.9rem; line-height: 1.5; }
-        .card.student { border-color: rgba(99,179,237,0.3); }
-        .card.student:hover { border-color: rgba(99,179,237,0.7); box-shadow: 0 20px 60px rgba(99,179,237,0.2); }
-        .card.professor { border-color: rgba(167,139,250,0.3); }
-        .card.professor:hover { border-color: rgba(167,139,250,0.7); box-shadow: 0 20px 60px rgba(167,139,250,0.2); }
+
+        .card-desc {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .card.student {
+            border-color: rgba(99, 179, 237, 0.3);
+        }
+
+        .card.student:hover {
+            border-color: rgba(99, 179, 237, 0.7);
+            box-shadow: 0 20px 60px rgba(99, 179, 237, 0.2);
+        }
+
+        .card.professor {
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        .card.professor:hover {
+            border-color: rgba(167, 139, 250, 0.7);
+            box-shadow: 0 20px 60px rgba(167, 139, 250, 0.2);
+        }
+
+        .card.admin {
+            border-color: rgba(246, 173, 85, 0.3);
+        }
+
+        .card.admin:hover {
+            border-color: rgba(246, 173, 85, 0.7);
+            box-shadow: 0 20px 60px rgba(246, 173, 85, 0.2);
+        }
+
         .footer-link {
-            color: rgba(255,255,255,0.4); font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
         }
-        .footer-link a { color: rgba(255,255,255,0.7); text-decoration: none; }
-        .footer-link a:hover { color: #fff; }
-        @media (max-width: 480px) { .cards { grid-template-columns: 1fr; } }
+
+        .footer-link a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+
+        .footer-link a:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="bg-orbs">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
         <div class="orb orb-3"></div>
     </div>
-    <div class="container">
+    <div class="container" style="max-width: 900px;">
         <div class="logo">🏫</div>
         <h1>Smart Campus</h1>
         <p class="subtitle">Academic Coordination Platform</p>
@@ -95,23 +232,31 @@
             <a href="/login?role=student" class="card student">
                 <span class="card-icon">🎓</span>
                 <div class="card-title">Student</div>
-                <div class="card-desc">View timetable, check room availability & get real-time class notifications</div>
+                <div class="card-desc">View timetable, enroll in courses & get class updates.</div>
             </a>
             <a href="/login?role=professor" class="card professor">
                 <span class="card-icon">👨‍🏫</span>
                 <div class="card-title">Professor</div>
-                <div class="card-desc">Schedule classes, manage bookings & notify enrolled students instantly</div>
+                <div class="card-desc">Schedule sessions, manage courses & notify students.</div>
+            </a>
+            <a href="/login?role=admin" class="card admin">
+                <span class="card-icon">🔐</span>
+                <div class="card-title">Admin</div>
+                <div class="card-desc">Manage governance, freeze enrollments & portal metrics.</div>
             </a>
         </div>
-        <p class="footer-link">New here? <a href="/register">Create an account</a> &nbsp;|&nbsp; <a href="/admin">Admin Panel</a></p>
+        <p class="footer-link">New student? <a href="/register">Create an account here</a></p>
     </div>
     <script>
         // Redirect if already logged in
         const token = localStorage.getItem('campus_token');
         const role = localStorage.getItem('campus_role');
         if (token && role) {
-            window.location.href = role === 'professor' ? '/professor' : '/student';
+            if (role === 'admin') window.location.href = '/admin/dashboard.html';
+            else if (role === 'professor') window.location.href = '/professor/dashboard.html';
+            else window.location.href = '/student/dashboard.html';
         }
     </script>
 </body>
+
 </html>

@@ -186,7 +186,14 @@
         const params = new URLSearchParams(location.search);
         const role = params.get('role') || 'student';
         const badge = document.getElementById('role-badge');
-        badge.textContent = role === 'professor' ? '👨‍🏫 Professor Login' : '🎓 Student Login';
+
+        if (role === 'professor') {
+            badge.textContent = '👨‍🏫 Professor Login';
+        } else if (role === 'admin') {
+            badge.textContent = '🔐 Admin Login';
+        } else {
+            badge.textContent = '🎓 Student Login';
+        }
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -204,7 +211,15 @@
                 localStorage.setItem('campus_token', data.token);
                 localStorage.setItem('campus_user', JSON.stringify(data.user));
                 localStorage.setItem('campus_role', data.user.role);
-                window.location.href = data.user.role === 'professor' ? '/professor' : '/student';
+
+                // Redirect to respective application dashboards
+                if (data.user.role === 'admin') {
+                    window.location.href = '/admin/dashboard.html';
+                } else if (data.user.role === 'professor') {
+                    window.location.href = '/professor/dashboard.html';
+                } else {
+                    window.location.href = '/student/dashboard.html';
+                }
             } else {
                 errEl.textContent = data.error || 'Login failed';
                 errEl.style.display = 'block';
