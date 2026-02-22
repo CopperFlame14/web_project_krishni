@@ -20,14 +20,25 @@ const qrDir = path.join(__dirname, 'qr-codes');
 if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir);
 
 // ── API Routes ────────────────────────────────────────────────────────────
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/classrooms', require('./routes/classrooms'));
-app.use('/api/blocks', require('./routes/blocks'));
-app.use('/api/reservations', require('./routes/reservations'));
-app.use('/api/timeslots', require('./routes/timetable'));
-app.use('/api/professor', require('./routes/professor'));
-app.use('/api/student', require('./routes/student'));
-app.use('/api/enrollments', require('./routes/enrollments'));
+const authRoutes = require('./routes/auth');
+const blockRoutes = require('./routes/blocks');
+const classroomRoutes = require('./routes/classrooms');
+const reservationRoutes = require('./routes/reservations');
+const timetableRoutes = require('./routes/timetable');
+const studentRoutes = require('./routes/student');
+const professorRoutes = require('./routes/professor');
+const enrollmentRoutes = require('./routes/enrollments');
+const adminRoutes = require('./routes/admin'); // Added
+
+app.use('/api/auth', authRoutes);
+app.use('/api/blocks', blockRoutes);
+app.use('/api/classrooms', classroomRoutes);
+app.use('/api/reservations', reservationRoutes);
+app.use('/api/timetable', timetableRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/professor', professorRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/admin', adminRoutes); // Added
 
 // Floors → classrooms (delegated to classrooms router)
 app.get('/api/floors/:floorId/classrooms', (req, res) => {

@@ -319,35 +319,52 @@
         WS.connect();
 
         async function loadDashboard() {
-            const data = await API.get('/api/student/dashboard');
-            if (!data) return;
-            document.getElementById('stat-enrollments').textContent = data.stats.enrollments;
-            document.getElementById('stat-notifs').textContent = data.stats.unreadNotifications;
-            document.getElementById('stat-today').textContent = data.todayTimetable.length;
-            const badge = document.getElementById('notif-badge');
-            if (data.stats.unreadNotifications > 0) { badge.textContent = data.stats.unreadNotifications; badge.style.display = 'flex'; }
+            try {
+                const data = await API.get('/api/student/dashboard');
+                if (!data) return;
 
-            const todayList = document.getElementById('today-list');
-            if (data.todayTimetable.length === 0) {
-                todayList.innerHTML = '<div class="empty">No classes today</div>';
-            } else {
-                todayList.innerHTML = data.todayTimetable.map(t => `
-                    <div class="timetable-item">
-                        <div class="timetable-time">${t.slot_label || ''} ${t.start_time ? `(${t.start_time}–${t.end_time})` : ''}</div>
-                        <div class="timetable-subject">${t.subject_name}</div>
-                        <div class="timetable-faculty">${t.faculty_name || ''} ${t.room_id ? '· Room ' + t.room_id : ''}</div>
-                    </div>`).join('');
-            }
+                document.getElementById('stat-enrollments').textContent = data.stats.enrollments || 0;
+                document.getElementById('stat-notifs').textContent = data.stats.unreadNotifications || 0;
+                document.getElementById('stat-today').textContent = (data.todayTimetable || []).length;
 
-            const enrollList = document.getElementById('enroll-list');
-            if (data.enrollments.length === 0) {
-                enrollList.innerHTML = '<div class="empty">No enrollments yet. <a href="/student/timetable" style="color:#a78bfa">Enroll now</a></div>';
-            } else {
-                enrollList.innerHTML = data.enrollments.map(e => `
-                    <div class="enroll-item">
-                        <div><span class="subject-code">${e.subject_code}</span> <span style="margin-left:8px;font-size:0.9rem">${e.subject_name}</span></div>
-                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">${e.professor_name}</div>
-                    </div>`).join('');
+                if (data.academicYear) {
+                    document.querySelector('.page-title').innerText = `Dashboard (${data.academicYear})`;
+                }
+
+                const badge = document.getElementById('notif-badge');
+                if (data.stats.unreadNotifications > 0) {
+                    badge.textContent = data.stats.unreadNotifications;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                const todayList = document.getElementById('today-list');
+                const todayTT = data.todayTimetable || [];
+                if (todayTT.length === 0) {
+                    todayList.innerHTML = '<div class="empty">No classes today</div>';
+                } else {
+                    todayList.innerHTML = todayTT.map(t => `
+                        <div class="timetable-item">
+                            <div class="timetable-time">${t.slot_label || ''} ${t.start_time ? `(${t.start_time}–${t.end_time})` : ''}</div>
+                            <div class="timetable-subject">${t.subject_name}</div>
+                            <div class="timetable-faculty">${t.room_id ? 'Room ' + t.room_id : 'No room assigned'}</div>
+                        </div>`).join('');
+                }
+
+                const enrollList = document.getElementById('enroll-list');
+                const enrollments = data.enrollments || [];
+                if (enrollments.length === 0) {
+                    enrollList.innerHTML = '<div class="empty">No enrollments yet. <a href="/student/enrollment.html" style="color:#a78bfa">Enroll now</a></div>';
+                } else {
+                    enrollList.innerHTML = enrollments.map(e => `
+                        <div class="enroll-item">
+                            <div><span class="subject-code">${e.course_code}</span> <span style="margin-left:8px;font-size:0.9rem">${e.course_name}</span></div>
+                            <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">${e.professor_name}</div>
+                        </div>`).join('');
+                }
+            } catch (err) {
+                console.error('Dash load failed:', err);
             }
         }
         loadDashboard();

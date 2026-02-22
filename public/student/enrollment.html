@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Enrollment - Smart Campus</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .enroll-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .course-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .course-info h3 {
+            margin: 0;
+            color: #6366f1;
+        }
+
+        .course-meta {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .enroll-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .enroll-btn.enrolled {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            cursor: default;
+        }
+
+        .unenroll-btn {
+            background: none;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .freeze-warning {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="enroll-container">
+        <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h1>Course Enrollment</h1>
+            <a href="/student" class="nav-link">Back to Dashboard</a>
+        </header>
+
+        <div id="freeze-msg" class="freeze-warning">
+            <strong>System Locked:</strong> Enrollment modifications are currently disabled by administration.
+        </div>
+
+        <div id="course-list">
+            <p>Loading available courses...</p>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        let myEnrollments = [];
+
+        async function init() {
+            try {
+                const [courses, enrolled, dash] = await Promise.all([
+                    API.get('/api/enrollments/courses'),
+                    API.get('/api/enrollments'),
+                    API.get('/api/student/dashboard')
+                ]);
+
+                if (dash && dash.academicYear) {
+                    document.querySelector('h1').innerText = `Course Enrollment (${dash.academicYear})`;
+                }
+
+                myEnrollments = enrolled.map(e => e.course_id);
+                renderCourses(courses);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderCourses(courses) {
+            const list = document.getElementById('course-list');
+            if (courses.length === 0) {
+                list.innerHTML = '<p>No courses available for enrollment.</p>';
+                return;
+            }
+
+            list.innerHTML = courses.map(c => {
+                const isEnrolled = myEnrollments.includes(c.id);
+                return `
+                    <div class="course-card">
+                        <div class="course-info">
+                            <h3>${c.code}: ${c.name}</h3>
+                            <div class="course-meta">Professor: ${c.professor_name} • Semester: ${c.semester}</div>
+                            <div class="course-meta">Enrolled: ${c.enrolled_count} students</div>
+                        </div>
+                        <div class="course-actions">
+                            ${isEnrolled
+                        ? `<div style="text-align:right">
+                                     <span class="badge badge-active enrolled" style="display:block; margin-bottom:0.5rem">Enrolled</span>
+                                     <button class="unenroll-btn" onclick="unenroll('${c.id}')">Unenroll</button>
+                                   </div>`
+                        : `<button class="enroll-btn" onclick="enroll('${c.id}')">Enroll Now</button>`
+                    }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function enroll(courseId) {
+            const { ok, data } = await API.post('/api/enrollments', { courseId });
+            if (ok) init();
+            else {
+                if (data.error === 'System Frozen') document.getElementById('freeze-msg').style.display = 'block';
+                alert(data.message || data.error);
+            }
+        }
+
+        async function unenroll(courseId) {
+            if (!confirm('Are you sure you want to unenroll?')) return;
+            const { ok, data } = await API.delete(`/api/enrollments/${courseId}`);
+            if (ok) init();
+            else alert(data.message || data.error);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

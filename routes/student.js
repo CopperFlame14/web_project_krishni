@@ -5,44 +5,40 @@ const { parse } = require('csv-parse/sync');
 const { prepare } = require('../database/db');
 const requireAuth = require('../middleware/requireAuth');
 const requireRole = require('../middleware/requireRole');
-const { getAllRoomsWithStatus } = require('../services/statusEngine');
+const checkFreeze = require('../middleware/checkFreeze');
+const { getAllRoomsWithStatus, getSystemConfig } = require('../services/statusEngine');
 
-// Multer: memory storage for CSV uploads (max 2MB)
+// Multer for CSV uploads
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 2 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) cb(null, true);
-        else cb(new Error('Only CSV files are allowed'));
-    }
+    limits: { fileSize: 2 * 1024 * 1024 }
 });
 
-// All student routes require JWT + student role
 router.use(requireAuth, requireRole('student'));
 
 // GET /api/student/dashboard
 router.get('/dashboard', async (req, res) => {
     try {
+        const academicYear = await getSystemConfig('current_academic_year');
         const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-        const todayDate = new Date(today).toISOString().split('T')[0];
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const todayDay = days[new Date(today).getDay()];
 
         const enrollments = await prepare(`
-            SELECT e.*, s.name as subject_name, s.code as subject_code, u.full_name as professor_name
+            SELECT e.*, c.name as course_name, c.code as course_code, u.full_name as professor_name
             FROM enrollments e
-            JOIN subjects s ON e.subject_id = s.id
-            JOIN users u ON s.professor_id = u.id
-            WHERE e.student_id = ?
-        `).all(req.user.id);
+            JOIN courses c ON e.course_id = c.id
+            JOIN users u ON c.professor_id = u.id
+            WHERE e.student_id = ? AND c.academic_year = ?
+        `).all(req.user.id, academicYear);
 
         const todayTimetable = await prepare(`
             SELECT st.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM student_timetables st
             LEFT JOIN time_slots ts ON st.slot_id = ts.id
-            WHERE st.student_id = ? AND st.day = ?
+            WHERE st.student_id = ? AND st.day = ? AND st.academic_year = ?
             ORDER BY ts.start_time
-        `).all(req.user.id, todayDay);
+        `).all(req.user.id, todayDay, academicYear);
 
         const unreadCount = await prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = FALSE').get(req.user.id);
 
@@ -50,7 +46,8 @@ router.get('/dashboard', async (req, res) => {
             student: { id: req.user.id, name: req.user.full_name, email: req.user.email },
             stats: { enrollments: enrollments.length, unreadNotifications: parseInt(unreadCount.c) },
             todayTimetable,
-            enrollments
+            enrollments,
+            academicYear
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -60,68 +57,52 @@ router.get('/dashboard', async (req, res) => {
 // GET /api/student/timetable
 router.get('/timetable', async (req, res) => {
     try {
+        const academicYear = await getSystemConfig('current_academic_year');
         const timetable = await prepare(`
             SELECT st.*, ts.start_time, ts.end_time, ts.label as slot_label
             FROM student_timetables st
             LEFT JOIN time_slots ts ON st.slot_id = ts.id
-            WHERE st.student_id = ?
+            WHERE st.student_id = ? AND st.academic_year = ?
             ORDER BY CASE st.day
                 WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
                 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 ELSE 7 END,
             ts.start_time
-        `).all(req.user.id);
+        `).all(req.user.id, academicYear);
         res.json(timetable);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// POST /api/student/timetable/upload — upload CSV timetable
-// Expected CSV columns: day, start_time, end_time, subject_name, faculty_name, room_id
-router.post('/timetable/upload', upload.single('timetable'), async (req, res) => {
+// POST /api/student/timetable/upload (Student only + Check Freeze)
+router.post('/timetable/upload', checkFreeze, upload.single('timetable'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'CSV file is required' });
+        const academicYear = await getSystemConfig('current_academic_year');
 
         const csvText = req.file.buffer.toString('utf-8');
-        const records = parse(csvText, {
-            columns: true,
-            skip_empty_lines: true,
-            trim: true
-        });
+        const records = parse(csvText, { columns: true, skip_empty_lines: true, trim: true });
 
-        const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        // Clear existing for THIS YEAR
+        await prepare('DELETE FROM student_timetables WHERE student_id = ? AND academic_year = ?').run(req.user.id, academicYear);
+
         let inserted = 0;
-        let errors = [];
-
-        // Clear existing timetable for this student
-        await prepare('DELETE FROM student_timetables WHERE student_id = ?').run(req.user.id);
-
-        for (const [i, row] of records.entries()) {
-            const { day, subject_name, faculty_name, room_id, slot_id } = row;
-            if (!day || !subject_name) {
-                errors.push(`Row ${i + 2}: day and subject_name are required`);
-                continue;
-            }
-            if (!validDays.includes(day)) {
-                errors.push(`Row ${i + 2}: invalid day "${day}"`);
-                continue;
-            }
-
-            // Try to find matching slot_id from start_time if provided
-            let resolvedSlotId = slot_id ? parseInt(slot_id) : null;
-            if (!resolvedSlotId && row.start_time) {
-                const slot = await prepare('SELECT id FROM time_slots WHERE start_time = ?').get(row.start_time);
-                resolvedSlotId = slot?.id || null;
+        for (const row of records) {
+            // Match CSV headers: day, start_time, subject_name, faculty_name, room_id
+            let slotId = null;
+            if (row.start_time) {
+                const s = await prepare('SELECT id FROM time_slots WHERE start_time = ?').get(row.start_time);
+                slotId = s?.id || null;
             }
 
             await prepare(`
-                INSERT INTO student_timetables (student_id, day, slot_id, room_id, subject_name, faculty_name)
+                INSERT INTO student_timetables (student_id, day, slot_id, room_id, subject_name, academic_year)
                 VALUES (?, ?, ?, ?, ?, ?)
-            `).run(req.user.id, day, resolvedSlotId, room_id || null, subject_name, faculty_name || null);
+            `).run(req.user.id, row.day, slotId, row.room_id || null, row.subject_name, academicYear);
             inserted++;
         }
 
-        res.json({ success: true, inserted, errors: errors.length > 0 ? errors : undefined });
+        res.json({ success: true, inserted });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -130,11 +111,7 @@ router.post('/timetable/upload', upload.single('timetable'), async (req, res) =>
 // GET /api/student/notifications
 router.get('/notifications', async (req, res) => {
     try {
-        const { unread } = req.query;
-        let sql = 'SELECT * FROM notifications WHERE user_id = ?';
-        if (unread === 'true') sql += ' AND is_read = FALSE';
-        sql += ' ORDER BY created_at DESC LIMIT 50';
-        const notifications = await prepare(sql).all(req.user.id);
+        const notifications = await prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
         const unreadCount = await prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = FALSE').get(req.user.id);
         res.json({ notifications, unreadCount: parseInt(unreadCount.c) });
     } catch (err) {
@@ -142,53 +119,28 @@ router.get('/notifications', async (req, res) => {
     }
 });
 
-// PUT /api/student/notifications/:id/read
+// MARK READ
 router.put('/notifications/:id/read', async (req, res) => {
-    try {
-        await prepare('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    await prepare('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?').run(parseInt(req.params.id), req.user.id);
+    res.json({ success: true });
 });
 
-// PUT /api/student/notifications/read-all
-router.put('/notifications/read-all', async (req, res) => {
-    try {
-        await prepare('UPDATE notifications SET is_read = TRUE WHERE user_id = ?').run(req.user.id);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/student/availability — live room availability
-router.get('/availability', async (req, res) => {
-    try {
-        const { slot_id, date, block } = req.query;
-        let rooms = await getAllRoomsWithStatus(slot_id, date);
-        if (block) rooms = rooms.filter(r => r.block === block);
-        res.json(rooms);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// GET /api/student/rescheduled — view rescheduled classes for enrolled subjects
+// GET /api/student/rescheduled — view session updates for enrolled courses
 router.get('/rescheduled', async (req, res) => {
     try {
-        const rescheduled = await prepare(`
-            SELECT pc.*, ts.start_time, ts.end_time, ts.label as slot_label,
-                   u.full_name as professor_name, s.name as subject_name, s.code as subject_code
-            FROM professor_classes pc
-            JOIN time_slots ts ON pc.slot_id = ts.id
-            JOIN users u ON pc.professor_id = u.id
-            LEFT JOIN subjects s ON pc.subject_id = s.id
-            JOIN enrollments e ON e.subject_id = pc.subject_id
-            WHERE e.student_id = ? AND pc.status IN ('scheduled','cancelled')
-            ORDER BY pc.date DESC
-        `).all(req.user.id);
-        res.json(rescheduled);
+        const academicYear = await getSystemConfig('current_academic_year');
+        const sessionUpdates = await prepare(`
+            SELECT cs.*, c.name as course_name, c.code as course_code, u.full_name as professor_name,
+                   ts.start_time, ts.end_time, ts.label as slot_label
+            FROM course_sessions cs
+            JOIN courses c ON cs.course_id = c.id
+            JOIN users u ON c.professor_id = u.id
+            JOIN time_slots ts ON cs.slot_id = ts.id
+            JOIN enrollments e ON e.course_id = c.id
+            WHERE e.student_id = ? AND c.academic_year = ? AND cs.status IN ('rescheduled', 'cancelled')
+            ORDER BY cs.date DESC
+        `).all(req.user.id, academicYear);
+        res.json(sessionUpdates);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

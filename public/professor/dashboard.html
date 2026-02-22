@@ -339,43 +339,50 @@
         WS.connect();
 
         async function loadDashboard() {
-            const [dash, classes, subjects] = await Promise.all([
-                API.get('/api/professor/dashboard'),
-                API.get('/api/professor/classes?status=scheduled'),
-                API.get('/api/professor/subjects')
-            ]);
-            if (dash) {
-                document.getElementById('stat-today').textContent = dash.stats.todayClasses;
-                document.getElementById('stat-total').textContent = dash.stats.totalScheduled;
-                document.getElementById('stat-subjects').textContent = dash.stats.subjects;
-                document.getElementById('stat-students').textContent = dash.stats.enrolledStudents;
-            }
-            if (classes) {
-                const upcoming = classes.slice(0, 10);
-                document.getElementById('classes-list').innerHTML = upcoming.length === 0
-                    ? '<div class="empty">No upcoming classes. <a href="/professor/schedule" style="color:#6c63ff">Schedule one</a></div>'
-                    : upcoming.map(c => `
-                        <div class="class-item">
-                            <div class="class-subject">${c.subject_name || 'Class'} <span class="status-badge status-${c.status}">${c.status}</span></div>
-                            <div class="class-meta">📍 Room ${c.room_id} · ${c.date} · ${c.slot_label || c.start_time}</div>
-                            <div class="class-actions">
-                                <button class="btn-sm btn-cancel" onclick="cancelClass(${c.id})">Cancel</button>
-                            </div>
-                        </div>`).join('');
-            }
-            if (subjects) {
-                document.getElementById('subjects-list').innerHTML = subjects.length === 0
-                    ? '<div class="empty">No subjects yet</div>'
-                    : subjects.map(s => `
-                        <div class="subject-item">
-                            <div><span class="subject-code">${s.code}</span> <span style="margin-left:8px;font-size:0.9rem">${s.name}</span></div>
-                        </div>`).join('');
+            try {
+                const [dash, sessions, courses] = await Promise.all([
+                    API.get('/api/professor/dashboard'),
+                    API.get('/api/professor/sessions?status=scheduled'),
+                    API.get('/api/professor/courses')
+                ]);
+
+                if (dash) {
+                    document.getElementById('stat-today').textContent = dash.stats.todaySessions || 0;
+                    document.getElementById('stat-total').textContent = dash.stats.totalScheduled || 0;
+                    document.getElementById('stat-subjects').textContent = dash.stats.courses || 0;
+                    document.getElementById('stat-students').textContent = dash.stats.enrolledStudents || 0;
+                }
+
+                if (sessions) {
+                    const upcoming = sessions.slice(0, 10);
+                    document.getElementById('classes-list').innerHTML = upcoming.length === 0
+                        ? '<div class="empty">No upcoming sessions. <a href="/professor/schedule" style="color:#6c63ff">Schedule one</a></div>'
+                        : upcoming.map(s => `
+                            <div class="class-item">
+                                <div class="class-subject">${s.course_name || 'Session'} <span class="status-badge status-${s.status}">${s.status}</span></div>
+                                <div class="class-meta">📍 Room ${s.room_id} · ${s.date} · ${s.slot_label}</div>
+                                <div class="class-actions">
+                                    <button class="btn-sm btn-cancel" onclick="cancelSession(${s.id})">Cancel</button>
+                                </div>
+                            </div>`).join('');
+                }
+
+                if (courses) {
+                    document.getElementById('subjects-list').innerHTML = courses.length === 0
+                        ? '<div class="empty">No active courses for this year</div>'
+                        : courses.map(c => `
+                            <div class="subject-item">
+                                <div><span class="subject-code">${c.code}</span> <span style="margin-left:8px;font-size:0.9rem">${c.name}</span></div>
+                            </div>`).join('');
+                }
+            } catch (err) {
+                console.error('Dash load failed:', err);
             }
         }
 
-        async function cancelClass(id) {
-            if (!confirm('Cancel this class? Enrolled students will be notified.')) return;
-            const { ok, data } = await API.delete(`/api/professor/classes/${id}`);
+        async function cancelSession(id) {
+            if (!confirm('Cancel this session? Enrolled students will be notified.')) return;
+            const { ok, data } = await API.delete(`/api/professor/sessions/${id}`);
             if (ok) { loadDashboard(); }
             else alert(data.error || 'Failed to cancel');
         }

@@ -477,7 +477,7 @@
         if (user) document.getElementById('sidebar-name').textContent = user.full_name || user.username;
         WS.connect();
 
-        let sel = { block: null, floor: null, room: null, slotId: null, subjectId: null, date: null };
+        let sel = { block: null, floor: null, room: null, slotId: null, courseId: null, date: null };
 
         // Set min date to today
         const today = new Date().toISOString().split('T')[0];
@@ -486,9 +486,10 @@
 
         function goStep(n) {
             for (let i = 1; i <= 5; i++) {
-                document.getElementById(`panel-${i}`).style.display = i === n ? 'block' : 'none';
+                const panel = document.getElementById(`panel-${i}`);
+                if (panel) panel.style.display = i === n ? 'block' : 'none';
                 const stepEl = document.getElementById(`step-${i}`);
-                stepEl.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+                if (stepEl) stepEl.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
             }
             if (n === 5) buildSummary();
         }
@@ -548,48 +549,45 @@
             sel.room = id;
             document.querySelectorAll('#rooms-grid .room-card').forEach(c => c.classList.remove('selected'));
             el.classList.add('selected');
-            // Load slots and subjects for step 4
-            const [slots, subjects] = await Promise.all([
+
+            const [slots, courses] = await Promise.all([
                 API.get(`/api/classrooms/${id}/slots?date=${sel.date}`),
-                API.get('/api/professor/subjects')
+                API.get('/api/professor/courses')
             ]);
+
             if (slots) {
                 document.getElementById('slot-select').innerHTML = slots
                     .filter(s => s.isAvailable)
                     .map(s => `<option value="${s.id}">${s.label} (${s.start_time}–${s.end_time})</option>`)
                     .join('') || '<option value="">No available slots</option>';
             }
-            if (subjects) {
+            if (courses) {
                 document.getElementById('subject-select').innerHTML =
-                    '<option value="">-- Select subject (optional) --</option>' +
-                    subjects.map(s => `<option value="${s.id}">${s.code} – ${s.name}</option>`).join('');
+                    '<option value="">-- Select course --</option>' +
+                    courses.map(c => `<option value="${c.id}">${c.code} – ${c.name}</option>`).join('');
             }
             goStep(4);
         }
 
         function reviewBooking() {
             const slotVal = document.getElementById('slot-select').value;
-            if (!slotVal) {
-                alert('Please select a time slot before proceeding.');
-                return;
-            }
+            if (!slotVal) return alert('Please select a time slot.');
+
             sel.slotId = parseInt(slotVal);
-            sel.subjectId = document.getElementById('subject-select').value
-                ? parseInt(document.getElementById('subject-select').value)
-                : null;
+            sel.courseId = document.getElementById('subject-select').value || null;
+            if (!sel.courseId) return alert('Please select a course.');
+
             goStep(5);
         }
 
         function buildSummary() {
             const slotText = document.getElementById('slot-select').selectedOptions[0]?.text || '–';
-            const subjectText = document.getElementById('subject-select').selectedOptions[0]?.text || 'None';
+            const courseText = document.getElementById('subject-select').selectedOptions[0]?.text || 'None';
             document.getElementById('summary-box').innerHTML = `
-                <div class="summary-row"><span class="summary-label">Block</span><span class="summary-val">Block ${sel.block?.name}</span></div>
-                <div class="summary-row"><span class="summary-label">Floor</span><span class="summary-val">Floor ${sel.floor?.num}</span></div>
                 <div class="summary-row"><span class="summary-label">Room</span><span class="summary-val">${sel.room}</span></div>
                 <div class="summary-row"><span class="summary-label">Date</span><span class="summary-val">${sel.date}</span></div>
                 <div class="summary-row"><span class="summary-label">Slot</span><span class="summary-val">${slotText}</span></div>
-                <div class="summary-row"><span class="summary-label">Subject</span><span class="summary-val">${subjectText}</span></div>
+                <div class="summary-row"><span class="summary-label">Course</span><span class="summary-val">${courseText}</span></div>
                 <div class="summary-row"><span class="summary-label">Notes</span><span class="summary-val">${document.getElementById('notes').value || '–'}</span></div>
             `;
         }
@@ -599,32 +597,25 @@
             const msg = document.getElementById('schedule-msg');
             msg.style.display = 'none';
 
-            if (!sel.slotId || !sel.room || !sel.date) {
-                msg.className = 'msg error';
-                msg.textContent = 'Missing required fields. Please go back and complete all steps.';
-                msg.style.display = 'block';
-                return;
-            }
-
             btn.disabled = true; btn.textContent = 'Scheduling...';
-            const { ok, data } = await API.post('/api/professor/classes', {
+            const { ok, data } = await API.post('/api/professor/sessions', {
                 roomId: sel.room,
                 slotId: sel.slotId,
                 date: sel.date,
-                subjectId: sel.subjectId || null,
+                courseId: sel.courseId,
                 notes: document.getElementById('notes').value
             });
+
             if (ok) {
                 msg.className = 'msg success';
-                msg.textContent = `✓ Class scheduled in Room ${data.class.room_id} on ${data.class.date}. Students have been notified.`;
+                msg.textContent = `✓ Session scheduled! Students enrolled in ${data.session.courseName} have been notified.`;
                 msg.style.display = 'block';
-                btn.textContent = '✓ Scheduled!';
                 setTimeout(() => { window.location.href = '/professor'; }, 2000);
             } else {
                 msg.className = 'msg error';
                 msg.textContent = data.error || 'Scheduling failed';
                 msg.style.display = 'block';
-                btn.disabled = false; btn.textContent = '✓ Schedule Class';
+                btn.disabled = false; btn.textContent = '✓ Schedule Session';
             }
         }
 
