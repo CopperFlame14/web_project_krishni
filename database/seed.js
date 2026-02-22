@@ -8,7 +8,8 @@ async function seed() {
 
         // Clear existing data (Order matters for foreign keys)
         console.log('🧹 Clearing existing data...');
-        await exec('TRUNCATE reservations, professor_classes, enrollments, student_timetables, timetable, subjects, users, classrooms, floors, blocks, time_slots CASCADE');
+        await exec('TRUNCATE notifications, reservations, professor_classes, enrollments, student_timetables, timetable, subjects, users, classrooms, floors, blocks, time_slots CASCADE');
+
 
         // Insert time slots (9 periods)
         const timeSlots = [
