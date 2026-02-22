@@ -59,11 +59,10 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         // Check for conflicts
-        const conflict = await checkConflict(room_id, slot_id, date);
-        if (conflict.hasConflict) {
+        const conflict = await checkRoomClash(room_id, slot_id, date);
+        if (conflict.hasClash) {
             return res.status(409).json({
                 error: 'Booking conflict detected',
-                conflictType: conflict.type,
                 details: conflict.details
             });
         }
