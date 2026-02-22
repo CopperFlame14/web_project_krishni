@@ -376,7 +376,7 @@
                     if (pending > 0) { document.getElementById('approval-panel').style.display = 'block'; }
                 }
 
-                if (sessions) {
+                if (sessions && Array.isArray(sessions)) {
                     const upcoming = sessions.slice(0, 10);
                     document.getElementById('classes-list').innerHTML = upcoming.length === 0
                         ? '<div class="empty">No upcoming sessions. <a href="/professor/schedule" style="color:#6c63ff">Schedule one</a></div>'
@@ -388,9 +388,11 @@
                                     <button class="btn-sm btn-cancel" onclick="cancelSession(${s.id})">Cancel</button>
                                 </div>
                             </div>`).join('');
+                } else if (sessions && sessions.error) {
+                    document.getElementById('classes-list').innerHTML = `<div class="empty" style="color:#fca5a5">⚠️ Error loading sessions. Migration might be needed.</div>`;
                 }
 
-                if (courses) {
+                if (courses && Array.isArray(courses)) {
                     document.getElementById('subjects-list').innerHTML = courses.length === 0
                         ? '<div class="empty">No active courses for this year</div>'
                         : courses.map(c => `
@@ -401,6 +403,8 @@
                                     ${c.pending_count > 0 ? `<span style="color:#fbbf24;margin-left:8px">⏳ ${c.pending_count} pending</span>` : ''}
                                 </div>
                             </div>`).join('');
+                } else if (courses && courses.error) {
+                    document.getElementById('subjects-list').innerHTML = `<div class="empty" style="color:#fca5a5">⚠️ Error loading courses.</div>`;
                 }
 
                 loadApprovals();
@@ -413,7 +417,12 @@
             try {
                 const requests = await API.get('/api/professor/enrollment-requests');
                 const el = document.getElementById('approvals-list');
-                if (!requests || requests.length === 0) { el.innerHTML = '<div class="empty">No pending requests 🎉</div>'; return; }
+                if (!requests || !Array.isArray(requests) || requests.length === 0) {
+                    el.innerHTML = requests && requests.error
+                        ? `<div class="empty" style="color:#fca5a5">⚠️ Error: ${requests.error}</div>`
+                        : '<div class="empty">No pending requests 🎉</div>';
+                    return;
+                }
                 document.getElementById('approval-panel').style.display = 'block';
                 el.innerHTML = requests.map(r => `
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:8px;border-left:3px solid #fbbf24">
