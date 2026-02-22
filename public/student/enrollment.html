@@ -90,7 +90,7 @@
 
     <script src="/js/api.js"></script>
     <script>
-        const token = localStorage.getItem('token');
+        if (!API.requireAuth('student')) { }
         let myEnrollments = [];
 
         async function init() {
