@@ -157,15 +157,40 @@
         .footer a:hover {
             color: #fff;
         }
+
+        .role-tab {
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .role-tab.active {
+            border-color: #6c63ff;
+            color: #fff;
+            background: rgba(108, 99, 255, 0.2);
+        }
     </style>
 </head>
 
 <body>
     <div class="card">
         <a href="/welcome" class="back">← Back</a>
+
+        <div class="role-tabs"
+            style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 2rem;">
+            <div class="role-tab" data-role="student" onclick="setRole('student')">🎓 Student</div>
+            <div class="role-tab" data-role="professor" onclick="setRole('professor')">👨‍🏫 Prof</div>
+            <div class="role-tab" data-role="admin" onclick="setRole('admin')">🔐 Admin</div>
+        </div>
+
         <div class="role-badge" id="role-badge">🎓 Student Login</div>
         <h1>Welcome back</h1>
-        <p class="subtitle">Sign in to your campus account</p>
+        <p class="subtitle" id="subtitle">Sign in to your campus account</p>
         <div class="error" id="error-msg"></div>
         <form id="login-form">
             <div class="form-group">
@@ -184,16 +209,29 @@
     <script src="/js/api.js"></script>
     <script>
         const params = new URLSearchParams(location.search);
-        const role = params.get('role') || 'student';
-        const badge = document.getElementById('role-badge');
+        let currentRole = params.get('role') || 'student';
 
-        if (role === 'professor') {
-            badge.textContent = '👨‍🏫 Professor Login';
-        } else if (role === 'admin') {
-            badge.textContent = '🔐 Admin Login';
-        } else {
-            badge.textContent = '🎓 Student Login';
+        function setRole(role) {
+            currentRole = role;
+            const badge = document.getElementById('role-badge');
+            const sub = document.getElementById('subtitle');
+
+            document.querySelectorAll('.role-tab').forEach(t => t.classList.toggle('active', t.dataset.role === role));
+
+            if (role === 'professor') {
+                badge.textContent = '👨‍🏫 Professor Login';
+                sub.textContent = 'Manage your courses and schedules';
+            } else if (role === 'admin') {
+                badge.textContent = '🔐 Admin Login';
+                sub.textContent = 'Access the Governance Portal (admin / admin_campus_99)';
+            } else {
+                badge.textContent = '🎓 Student Login';
+                sub.textContent = 'Check your timetable and enrollments';
+            }
         }
+
+        // Init
+        setRole(currentRole);
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
