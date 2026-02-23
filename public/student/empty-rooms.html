@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empty Room Finder – Smart Campus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ... shared styles with dashboard ... */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0e17;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            background: rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(167, 139, 250, 0.15);
+            color: #a78bfa;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 2rem;
+            max-width: 1000px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #6c63ff;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #5b54e0;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .room-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: 0.2s;
+        }
+
+        .room-card:hover {
+            border-color: #6c63ff;
+            transform: translateY(-3px);
+        }
+
+        .room-id {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a78bfa;
+            margin-bottom: 0.5rem;
+        }
+
+        .room-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 1rem;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 4rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            color: #fca5a5;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">🏫 Smart Campus</div>
+        <a href="/student" class="nav-item">🏠 Dashboard</a>
+        <a href="/student/timetable" class="nav-item">📅 My Timetable</a>
+        <a href="/student/notifications" class="nav-item">🔔 Notifications</a>
+        <a href="/student/empty-rooms.html" class="nav-item active">🔍 Empty Rooms</a>
+        <button class="logout-btn" onclick="API.logout()" style="width:100%; margin-top:auto">Sign Out</button>
+    </nav>
+    <main class="main">
+        <div class="page-title">🔍 Find an Empty Classroom</div>
+        <div class="panel">
+            <div class="search-bar">
+                <div>
+                    <label style="font-size:0.8rem; color:rgba(255,255,255,0.5)">Date</label>
+                    <input type="date" id="search-date">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; color:rgba(255,255,255,0.5)">Time Slot</label>
+                    <select id="search-slot">
+                        <option value="">Loading slots...</option>
+                    </select>
+                </div>
+                <div style="display:flex; align-items:flex-end">
+                    <button class="btn" style="width:100%" onclick="searchRooms()">Find Rooms</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-area">
+            <div class="empty">Select a date and slot to find available classrooms.</div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        if (!API.requireAuth('student')) { }
+
+        // Initialize date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('search-date').value = today;
+        document.getElementById('search-date').min = today;
+
+        async function init() {
+            const slots = await API.get('/api/timetable/slots');
+            if (slots) {
+                document.getElementById('search-slot').innerHTML = slots.map(s =>
+                    `<option value="${s.id}">${s.label} (${s.start_time}–${s.end_time})</option>`
+                ).join('');
+            }
+        }
+
+        async function searchRooms() {
+            const date = document.getElementById('search-date').value;
+            const slotId = document.getElementById('search-slot').value;
+            if (!date || !slotId) return;
+
+            const resultsArea = document.getElementById('results-area');
+            resultsArea.innerHTML = '<div class="empty">Searching...</div>';
+
+            const rooms = await API.get(`/api/classrooms/available?date=${date}&slotId=${slotId}`);
+
+            if (!rooms || rooms.length === 0) {
+                resultsArea.innerHTML = '<div class="empty">No empty rooms found for this slot.</div>';
+                return;
+            }
+
+            resultsArea.innerHTML = `
+                <div class="rooms-grid">
+                    ${rooms.map(r => `
+                        <div class="room-card">
+                            <div class="room-id">${r.id}</div>
+                            <div class="room-meta">Block ${r.block} • Floor ${r.floor}</div>
+                            <div class="status-pill">Available</div>
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.3); margin-top:1rem">Capacity: ${r.capacity} seats</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

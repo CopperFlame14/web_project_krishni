@@ -136,12 +136,34 @@ function displaySchedule(room) {
             slots.forEach(slot => {
                 const timetableEntry = room.todaySchedule.find(t => t.slot_id === slot.id);
                 const reservation = room.todayReservations.find(r => r.slot_id === slot.id);
+                const session = room.todayProfClasses.find(cs => cs.slot_id === slot.id);
 
                 const isCurrent = slot.id === currentSlotId;
                 let content = '';
                 let statusClass = '';
 
-                if (reservation) {
+                if (session) {
+                    if (session.status === 'scheduled') {
+                        content = `
+                            <div class="schedule-content">
+                                <div class="schedule-subject">📚 ${session.course_name}</div>
+                                <div class="schedule-faculty">${session.professor_name}</div>
+                                <div style="font-size:0.75rem; color:#6ee7b7">Rescheduled Class</div>
+                            </div>
+                            <span class="room-status occupied">Class</span>
+                        `;
+                        statusClass = 'occupied';
+                    } else {
+                        content = `
+                            <div class="schedule-content">
+                                <div class="schedule-subject" style="text-decoration: line-through; color: var(--text-muted)">📚 ${session.course_name}</div>
+                                <div class="schedule-faculty">Status: Cancelled</div>
+                            </div>
+                            <span class="room-status available">Cancelled</span>
+                        `;
+                        statusClass = 'available';
+                    }
+                } else if (reservation) {
                     content = `
                         <div class="schedule-content">
                             <div class="schedule-subject">📌 ${reservation.purpose}</div>
@@ -153,8 +175,8 @@ function displaySchedule(room) {
                 } else if (timetableEntry) {
                     content = `
                         <div class="schedule-content">
-                            <div class="schedule-subject">📚 ${timetableEntry.subject}</div>
-                            <div class="schedule-faculty">${timetableEntry.faculty}</div>
+                            <div class="schedule-subject">📚 ${timetableEntry.subject || timetableEntry.course_name}</div>
+                            <div class="schedule-faculty">${timetableEntry.faculty || timetableEntry.professor_name}</div>
                         </div>
                         <span class="room-status occupied">Class</span>
                     `;

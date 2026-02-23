@@ -92,7 +92,7 @@ router.get('/:id', async (req, res) => {
             JOIN time_slots ts ON cs.slot_id = ts.id
             JOIN courses c ON cs.course_id = c.id
             JOIN users u ON c.professor_id = u.id
-            WHERE cs.room_id = ? AND cs.date = ?::DATE AND cs.status = 'scheduled'
+            WHERE cs.room_id = ? AND cs.date = ?::DATE
             ORDER BY ts.id
         `).all(room.id, todayDate);
 
@@ -107,6 +107,21 @@ router.get('/:id', async (req, res) => {
             todayReservations,
             todayProfClasses
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/classrooms/available - Dedicated search for empty rooms
+router.get('/available', async (req, res) => {
+    try {
+        await initDB();
+        const { slotId, date } = req.query;
+        if (!slotId || !date) return res.status(400).json({ error: 'slotId and date are required' });
+
+        const rooms = await getAllRoomsWithStatus(slotId, date);
+        const availableRooms = rooms.filter(r => r.currentStatus === 'available');
+        res.json(availableRooms);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

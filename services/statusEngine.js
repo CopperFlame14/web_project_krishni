@@ -96,10 +96,9 @@ async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
         JOIN courses c ON cs.course_id = c.id
         JOIN users u ON c.professor_id = u.id
         WHERE cs.room_id = ? AND cs.slot_id = ? AND cs.date = ?::DATE
-          AND cs.status = 'scheduled'
     `).get(roomId, slot, targetDate);
 
-    if (session) {
+    if (session && session.status === 'scheduled') {
         return {
             status: 'occupied',
             reason: session.course_name || 'Active Session',
@@ -108,6 +107,10 @@ async function getRoomStatus(roomId, slotId = null, day = null, date = null) {
             sessionId: session.id,
             priority: 2
         };
+    }
+
+    if (session && session.status === 'cancelled') {
+        return { status: 'available', reason: 'Class Cancelled', priority: 2 };
     }
 
     // ── PRIORITY 3: Reservation ──────────────────────────────────────────
@@ -187,7 +190,7 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
             FROM course_sessions cs
             JOIN courses c ON cs.course_id = c.id
             JOIN users u ON c.professor_id = u.id
-            WHERE cs.slot_id = ? AND cs.date = ?::DATE AND cs.status = 'scheduled'
+            WHERE cs.slot_id = ? AND cs.date = ?::DATE
         `).all(targetSlotId, targetDate),
 
         prepare(`
@@ -226,7 +229,11 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
         // 2. Course Session (if priority 5 or lower)
         if (status.priority >= 2 && sessionMap[room.id]) {
             const s = sessionMap[room.id];
-            status = { status: 'occupied', reason: s.course_name, faculty: s.professor_name, courseCode: s.course_code, sessionId: s.id, priority: 2 };
+            if (s.status === 'scheduled') {
+                status = { status: 'occupied', reason: s.course_name, faculty: s.professor_name, courseCode: s.course_code, sessionId: s.id, priority: 2 };
+            } else if (s.status === 'cancelled') {
+                status = { status: 'available', reason: 'Class Cancelled', priority: 2 };
+            }
         }
 
         // 3. Reservation (if priority 5 or lower)

@@ -28,7 +28,7 @@ async function scheduleSession({ professorId, courseId, roomId, slotId, date, no
         await notifyEnrolledStudents(
             courseId,
             sessionId,
-            'schedule',
+            'class_scheduled',
             `New Lecture: ${course.name}`,
             `A new session for ${course.code} has been scheduled on ${date} at slot ${slotId} in room ${roomId}.`
         );
@@ -56,7 +56,7 @@ async function cancelSession(sessionId, professorId) {
     await notifyEnrolledStudents(
         session.course_id,
         sessionId,
-        'cancel',
+        'class_cancelled',
         `CANCELLED: ${session.course_name}`,
         `The session for ${session.course_code} on ${session.date} has been cancelled.`
     );
@@ -94,7 +94,7 @@ async function rescheduleSession(sessionId, { professorId, newRoomId, newSlotId,
     await notifyEnrolledStudents(
         session.course_id,
         sessionId,
-        'reschedule',
+        'class_rescheduled',
         `RESCHEDULED: ${session.course_name}`,
         `The session for ${session.course_code} has been moved to ${newDate} at slot ${newSlotId} in room ${newRoomId}.`
     );
