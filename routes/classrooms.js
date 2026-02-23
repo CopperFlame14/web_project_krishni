@@ -57,6 +57,21 @@ router.get('/floor/:floorId', requireAuth, async (req, res) => {
     }
 });
 
+// GET /api/classrooms/available - Dedicated search for empty rooms
+router.get('/available', async (req, res) => {
+    try {
+        await initDB();
+        const { slotId, date } = req.query;
+        if (!slotId || !date) return res.status(400).json({ error: 'slotId and date are required' });
+
+        const rooms = await getAllRoomsWithStatus(slotId, date);
+        const availableRooms = rooms.filter(r => r.currentStatus === 'available');
+        res.json(availableRooms);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/classrooms/:id - Get single classroom
 router.get('/:id', async (req, res) => {
     try {
@@ -107,21 +122,6 @@ router.get('/:id', async (req, res) => {
             todayReservations,
             todayProfClasses
         });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET /api/classrooms/available - Dedicated search for empty rooms
-router.get('/available', async (req, res) => {
-    try {
-        await initDB();
-        const { slotId, date } = req.query;
-        if (!slotId || !date) return res.status(400).json({ error: 'slotId and date are required' });
-
-        const rooms = await getAllRoomsWithStatus(slotId, date);
-        const availableRooms = rooms.filter(r => r.currentStatus === 'available');
-        res.json(availableRooms);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

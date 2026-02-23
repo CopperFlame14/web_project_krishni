@@ -1,0 +1,11 @@
+day,start_time,subject_name,faculty_name,room_id
+Monday,09:00,Advanced Mathematics,Dr. Professor A,A001
+Monday,10:00,Advanced Mathematics,Dr. Professor A,A001
+Tuesday,09:00,Quantum Physics,Dr. Professor C,A002
+Tuesday,10:00,Quantum Physics,Dr. Professor C,A002
+Wednesday,11:00,Organic Chemistry,Dr. Professor E,A003
+Wednesday,12:00,Organic Chemistry,Dr. Professor E,A003
+Thursday,13:00,Data Structures,Dr. Professor G,A004
+Thursday,14:00,Data Structures,Dr. Professor G,A004
+Friday,09:00,World Literature,Dr. Professor I,A101
+Friday,10:00,World Literature,Dr. Professor I,A101
