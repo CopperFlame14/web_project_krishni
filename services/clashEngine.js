@@ -68,13 +68,13 @@ async function checkProfessorTimeClash(professorId, slotId, date, excludeSession
         WHERE c.professor_id = $1
           AND cs.date::DATE = $2::DATE
           AND cs.status = 'scheduled'
-          AND ($3 IS NULL OR cs.id != $3)
-          AND ts.start_time < $4
-          AND $5 < ts.end_time
+          AND ($3::INTEGER IS NULL OR cs.id != $3::INTEGER)
+          AND ts.start_time < $4::TEXT
+          AND $5::TEXT < ts.end_time
     `).get(
         professorId,
         date,
-        excludeSessionId,
+        excludeSessionId ? parseInt(excludeSessionId) : null,
         slot.end_time,
         slot.start_time
     );
@@ -112,13 +112,13 @@ async function checkClassroomDoubleBook(roomId, slotId, date, excludeSessionId =
         WHERE cs.room_id = $1
           AND cs.date::DATE = $2::DATE
           AND cs.status = 'scheduled'
-          AND ($3 IS NULL OR cs.id != $3)
-          AND ts.start_time < $4
-          AND $5 < ts.end_time
+          AND ($3::INTEGER IS NULL OR cs.id != $3::INTEGER)
+          AND ts.start_time < $4::TEXT
+          AND $5::TEXT < ts.end_time
     `).get(
         roomId,
         date,
-        excludeSessionId,
+        excludeSessionId ? parseInt(excludeSessionId) : null,
         slot.end_time,
         slot.start_time
     );
@@ -137,8 +137,8 @@ async function checkClassroomDoubleBook(roomId, slotId, date, excludeSessionId =
         JOIN time_slots ts ON r.slot_id = ts.id
         WHERE r.room_id = $1
           AND r.date::DATE = $2::DATE
-          AND ts.start_time < $3
-          AND $4 < ts.end_time
+          AND ts.start_time < $3::TEXT
+          AND $4::TEXT < ts.end_time
     `).get(roomId, date, slot.end_time, slot.start_time);
 
     if (reservation) {

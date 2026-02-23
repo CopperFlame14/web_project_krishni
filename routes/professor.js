@@ -127,7 +127,7 @@ router.post('/courses', async (req, res) => {
             const result = await prepare(`
                 INSERT INTO courses (code, name, professor_id, academic_year, semester,
                                      max_capacity, auto_approve, enrollment_open_at, enrollment_close_at, status)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                VALUES ($1, $2, $3::INTEGER, $4, $5::INTEGER, $6::INTEGER, $7::BOOLEAN, $8::TIMESTAMPTZ, $9::TIMESTAMPTZ, $10)
                 RETURNING id
             `).run(
                 code, name, req.user.id, academicYear, semester || 1,
@@ -163,10 +163,10 @@ router.patch('/courses/:id', async (req, res) => {
         await prepare(`
             UPDATE courses SET
                 status = COALESCE($1, status),
-                max_capacity = COALESCE($2, max_capacity),
-                auto_approve = COALESCE($3, auto_approve),
-                enrollment_open_at = COALESCE($4, enrollment_open_at),
-                enrollment_close_at = COALESCE($5, enrollment_close_at),
+                max_capacity = COALESCE($2::INTEGER, max_capacity),
+                auto_approve = COALESCE($3::BOOLEAN, auto_approve),
+                enrollment_open_at = COALESCE($4::TIMESTAMPTZ, enrollment_open_at),
+                enrollment_close_at = COALESCE($5::TIMESTAMPTZ, enrollment_close_at),
                 name = COALESCE($6, name)
             WHERE id = $7
         `).run(status, max_capacity, auto_approve, enrollment_open_at, enrollment_close_at, name, req.params.id);

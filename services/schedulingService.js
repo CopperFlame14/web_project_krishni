@@ -16,9 +16,9 @@ async function scheduleSession({ professorId, courseId, roomId, slotId, date, no
     // 2. Insert session
     const result = await prepare(`
         INSERT INTO course_sessions (course_id, room_id, slot_id, date, notes, status)
-        VALUES ($1, $2, $3, $4::DATE, $5, 'scheduled')
+        VALUES ($1, $2, $3::INTEGER, $4::DATE, $5::TEXT, 'scheduled')
         RETURNING id
-    `).run(courseId, roomId, slotId, date, notes || null);
+    `).run(courseId, roomId, slotId, notes || null);
 
     const sessionId = result.lastInsertRowid;
 
