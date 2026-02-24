@@ -11,7 +11,15 @@ async function ensureDB() {
 }
 
 function getSchoolTime() {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    // Force IST (Asia/Kolkata) using absolute offset or Intl if available
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 mins
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istTime = new Date(utc + istOffset);
+
+    console.log(`[TimeDebug] Server UTC: ${new Date().toISOString()}`);
+    console.log(`[TimeDebug] Calculated IST: ${istTime.toLocaleString('en-IN')}`);
+    return istTime;
 }
 
 async function getCurrentTimeSlot() {
@@ -21,11 +29,15 @@ async function getCurrentTimeSlot() {
     const currentTime = `${hours}:${minutes}`;
 
     const slots = await prepare('SELECT * FROM time_slots ORDER BY id').all();
+    console.log(`[SlotDebug] Checking current time: ${currentTime} against ${slots.length} slots`);
+
     for (const slot of slots) {
         if (currentTime >= slot.start_time && currentTime < slot.end_time) {
+            console.log(`[SlotDebug] Found match: Slot ${slot.id} (${slot.label})`);
             return slot;
         }
     }
+    console.log('[SlotDebug] No active slot found for current time');
     return null;
 }
 

@@ -2,7 +2,7 @@ services:
   - type: web
     name: classroom-tracker
     runtime: node
-    buildCommand: npm install && npm run seed
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
