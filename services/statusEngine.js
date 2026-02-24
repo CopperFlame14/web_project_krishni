@@ -174,10 +174,21 @@ async function getAllRoomsWithStatus(slotId = null, date = null) {
 
     if (slotId || date) {
         targetDate = date || getTodayDate();
-        targetSlotId = slotId ? parseInt(slotId) : null;
-        const d = new Date(targetDate);
+        if (slotId) {
+            targetSlotId = parseInt(slotId);
+        } else {
+            // Date provided but no slot — auto-detect current slot if date is today
+            const todayDate = getTodayDate();
+            if (targetDate === todayDate) {
+                const currentSlot = await getCurrentTimeSlot();
+                targetSlotId = currentSlot?.id || null;
+            } else {
+                targetSlotId = null; // Future/past date with no slot → show all as available
+            }
+        }
+        const d = new Date(targetDate + 'T00:00:00');
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        targetDay = dayNames[d.getDay()];
+        targetDay = dayNames[d.getUTCDay()];
     } else {
         const currentSlot = await getCurrentTimeSlot();
         targetSlotId = currentSlot?.id || null;
