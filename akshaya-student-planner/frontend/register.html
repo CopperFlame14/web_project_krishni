@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <div class="auth-container register-container">
+    <div class="auth-header">
+      <h1>Create Account</h1>
+      <p>Set up your Student Planner profile</p>
+    </div>
+
+    <div id="alertBox" class="alert-box"></div>
+
+    <form id="registerForm">
+
+      <!-- Basic Details -->
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" placeholder="John Doe" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="regNumber">Registration Number</label>
+          <input type="text" id="regNumber" placeholder="e.g., 2026CS101" required>
+        </div>
+        <div class="form-group">
+          <label for="mobile">Mobile Number</label>
+          <input type="tel" id="mobile" placeholder="+1 234 567 8900" required>
+        </div>
+      </div>
+
+      <!-- Auth Credentials -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="student@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required minlength="6">
+        </div>
+      </div>
+
+      <!-- Study Preferences -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="studyHours">Preferred Study Hours (per day)</label>
+          <input type="number" id="studyHours" placeholder="e.g., 4" min="1" max="24" required>
+        </div>
+        <div class="form-group">
+          <label for="studyTime">Preferred Study Time</label>
+          <select id="studyTime" required>
+            <option value="" disabled selected>Select a time</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Night">Night</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="userGoal">User Goal</label>
+        <input type="text" id="userGoal" placeholder="e.g., Crack final exams, Learn Python" required>
+      </div>
+
+      <button type="submit" id="registerBtn" class="btn btn-primary" style="margin-top: 1.5rem;">
+        <span>Create Account</span>
+        <div class="loader"></div>
+      </button>
+
+      <button type="button" class="btn btn-outline" style="margin-top: 0.75rem;"
+        onclick="window.location.href='login.html'">
+        Back to Login
+      </button>
+    </form>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="register.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progress Analytics | AI Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn"><i class="ph ph-x"></i></button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item" href="dashboard.html">
+            <i class="ph ph-squares-four"></i><span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i><span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="subjects.html">
+            <i class="ph ph-books"></i><span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i><span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item active" href="progress.html">
+            <i class="ph ph-chart-line-up"></i><span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i><span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="study.html">
+            <i class="ph ph-timer"></i><span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i><span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn"><i class="ph ph-sign-out"></i><span>Logout</span></a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="dashboard-header">
+        <div>
+          <h1>Progress Analytics</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">Review your study trends and consistency.</p>
+        </div>
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn"><i class="ph ph-list"></i></button>
+        </div>
+      </header>
+
+      <!-- Weekly Overview Stat Tiles -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <div class="widget-card" style="min-height: 120px; flex-direction: row; align-items: center; justify-content: space-between;">
+           <div>
+             <p style="color: var(--text-muted); font-size: 0.9rem;">Total Study Time (7 Days)</p>
+             <h2 style="font-size: 2rem; margin-top: 0.5rem;" id="statTotalTime">0h 0m</h2>
+           </div>
+           <i class="ph ph-clock" style="font-size: 2.5rem; color: var(--accent-secondary);"></i>
+        </div>
+        <div class="widget-card" style="min-height: 120px; flex-direction: row; align-items: center; justify-content: space-between;">
+           <div>
+             <p style="color: var(--text-muted); font-size: 0.9rem;">Tasks Completed</p>
+             <h2 style="font-size: 2rem; margin-top: 0.5rem;" id="statTotalTasks">0</h2>
+           </div>
+           <i class="ph ph-check-square-offset" style="font-size: 2.5rem; color: var(--success);"></i>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="progress-dashboard">
+        <div class="chart-container">
+          <h3>Daily Study Hours</h3>
+          <div class="chart-wrapper">
+            <canvas id="dailyHoursChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h3>Subject Distribution</h3>
+          <div class="chart-wrapper" style="display:flex; justify-content:center; align-items:center;">
+             <canvas id="subjectDistChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="dashboard.js"></script> 
+  <script src="progress.js"></script>
+</body>
+</html>

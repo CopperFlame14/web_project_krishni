@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker | AI Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn"><i class="ph ph-x"></i></button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item" href="dashboard.html">
+            <i class="ph ph-squares-four"></i><span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i><span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="subjects.html">
+            <i class="ph ph-books"></i><span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item active" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i><span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="progress.html">
+            <i class="ph ph-chart-line-up"></i><span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i><span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="study.html">
+            <i class="ph ph-timer"></i><span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i><span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn"><i class="ph ph-sign-out"></i><span>Logout</span></a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="dashboard-header">
+        <div>
+          <h1>Habit Tracker</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">Build consistency day by day.</p>
+        </div>
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn"><i class="ph ph-list"></i></button>
+        </div>
+      </header>
+
+      <div class="habits-dashboard">
+        
+        <form class="habits-header" id="createHabitForm" style="flex-direction:column; gap:0.75rem;">
+           <input type="text" id="newHabitInput" placeholder="What habit do you want to build?" required style="width:100%; font-size:1rem; padding:0.75rem 1rem;">
+           <button type="submit" class="btn btn-primary" style="align-self:flex-start; padding:0.5rem 1.2rem; font-size:0.9rem;">+ Track Habit</button>
+        </form>
+
+        <div class="habits-grid" id="habitsGrid">
+           <!-- Handled by JS -->
+           <div class="loader" style="margin: 2rem auto; border-top-color: var(--accent-primary);"></div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="dashboard.js"></script> 
+  <script src="habits.js"></script>
+</body>
+</html>

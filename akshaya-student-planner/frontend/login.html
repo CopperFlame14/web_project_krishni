@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <div class="auth-container">
+    <div class="auth-header">
+      <h1>Welcome Back</h1>
+      <p>Log in to your Student Planner</p>
+    </div>
+
+    <!-- Alert Box for Errors/Success -->
+    <div id="alertBox" class="alert-box"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="student@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" id="loginBtn" class="btn btn-primary">
+        <span>Login</span>
+        <div class="loader"></div>
+      </button>
+
+      <button type="button" id="forgotPwdBtn" class="btn btn-link">Forgot Password?</button>
+    </form>
+
+    <div class="auth-footer">
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+        Don't have an account?
+      </p>
+      <button type="button" id="goRegisterBtn" class="btn btn-outline" onclick="window.location.href='register.html'">
+        Register Now
+      </button>
+    </div>
+  </div>
+
+  <!-- App Configuration & Supabase Init -->
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <!-- Login Logic -->
+  <script src="login.js"></script>
+</body>
+
+</html>

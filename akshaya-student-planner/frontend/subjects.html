@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subjects | AI Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item" href="dashboard.html">
+            <i class="ph ph-squares-four"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i>
+            <span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item active" href="subjects.html">
+            <i class="ph ph-books"></i>
+            <span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="progress.html">
+            <i class="ph ph-chart-line-up"></i>
+            <span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i>
+            <span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="study.html">
+            <i class="ph ph-timer"></i>
+            <span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i>
+            <span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn">
+          <i class="ph ph-sign-out"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <header class="dashboard-header">
+        <div>
+          <h1>Subjects</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">Organize your curriculum and track specific classes.</p>
+        </div>
+        
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn">
+            <i class="ph ph-list"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="subjects-wrapper">
+        
+        <div class="subjects-main">
+          <h2>Your Subjects</h2>
+          <div id="subjectsList" class="subjects-list">
+             <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+        <div class="subjects-side">
+          <h3>Create Subject</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Assign a unique color tag.</p>
+
+          <form id="createSubjectForm">
+            <div class="form-group">
+              <label for="subjectName">Subject Name</label>
+              <input type="text" id="subjectName" placeholder="e.g., Data Structures" required>
+            </div>
+
+            <div class="form-group">
+              <label for="subjectColor">Subject Color</label>
+              <div class="color-picker-wrapper">
+                <input type="color" id="subjectColor" class="color-input" value="#8b5cf6">
+                <span id="colorHexDisplay" style="color: var(--text-muted); font-size: 0.9rem;">#8b5cf6</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Subject</button>
+          </form>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="dashboard.js"></script> <!-- Gives us mobile sidebar & logout bounds -->
+  <script src="subjects.js"></script>
+</body>
+</html>

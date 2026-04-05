@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar | AI Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item" href="dashboard.html">
+            <i class="ph ph-squares-four"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item active" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i>
+            <span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="subjects.html">
+            <i class="ph ph-books"></i>
+            <span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="progress.html">
+            <i class="ph ph-chart-line-up"></i>
+            <span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i>
+            <span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="study.html">
+            <i class="ph ph-timer"></i>
+            <span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i>
+            <span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn">
+          <i class="ph ph-sign-out"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <header class="dashboard-header">
+        <div>
+          <h1>Calendar</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;">Plan your study sessions and track activity.</p>
+        </div>
+        
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn">
+            <i class="ph ph-list"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Calendar Interface -->
+      <div class="calendar-wrapper">
+        
+        <div class="calendar-main">
+          <div class="calendar-header-nav">
+            <button class="calendar-nav-btn" id="prevMonthBtn"><i class="ph ph-caret-left"></i></button>
+            <h2 id="currentMonthYear">September 2026</h2>
+            <button class="calendar-nav-btn" id="nextMonthBtn"><i class="ph ph-caret-right"></i></button>
+          </div>
+
+          <div class="calendar-grid-header">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+          </div>
+
+          <div class="calendar-grid" id="calendarDays">
+            <!-- Days rendered via JS -->
+          </div>
+        </div>
+
+        <div class="calendar-side" id="calendarSidePanel">
+          <!-- Populated dynamically via JS -->
+          <div class="calendar-side-header">
+            <h3 id="selectedDateDisplay">Select a Date</h3>
+            <p id="selectedDateRelative">--</p>
+          </div>
+
+          <div id="sidePanelContent">
+            <div class="no-data-msg">
+              Click on a day in the calendar to view or plan tasks.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="calendar.js"></script>
+</body>
+</html>
