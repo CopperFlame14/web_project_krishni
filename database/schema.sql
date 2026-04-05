@@ -168,3 +168,81 @@ CREATE INDEX IF NOT EXISTS idx_sessions_date ON course_sessions(date);
 CREATE INDEX IF NOT EXISTS idx_st_student_year ON student_timetables(student_id, academic_year);
 CREATE INDEX IF NOT EXISTS idx_enroll_course ON enrollments(course_id);
 
+-- ============================================================================
+-- STUDENT PLANNER TABLES
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS planner_profiles (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+    full_name TEXT NOT NULL,
+    registration_number TEXT NOT NULL,
+    mobile_number TEXT,
+    preferred_study_hours INTEGER,
+    preferred_study_time TEXT,
+    user_goal TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS planner_subjects (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    color_code TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS planner_tasks (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    subject_id UUID REFERENCES planner_subjects(id) ON DELETE SET NULL,
+    task_date DATE NOT NULL,
+    title TEXT NOT NULL,
+    completed BOOLEAN DEFAULT false,
+    time_spent_minutes INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS planner_daily_progress (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    progress_date DATE NOT NULL,
+    total_tasks_completed INTEGER DEFAULT 0,
+    total_time_spent_minutes INTEGER DEFAULT 0,
+    UNIQUE(user_id, progress_date)
+);
+
+CREATE TABLE IF NOT EXISTS planner_study_sessions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    subject_id UUID REFERENCES planner_subjects(id) ON DELETE CASCADE NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    session_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS planner_daily_moods (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    mood TEXT NOT NULL,
+    mood_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, mood_date)
+);
+
+CREATE TABLE IF NOT EXISTS planner_habits (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS planner_habit_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    habit_id UUID REFERENCES planner_habits(id) ON DELETE CASCADE NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(habit_id, log_date)
+);

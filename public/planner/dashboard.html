@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+</head>
+<body>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item active" href="dashboard.html">
+            <i class="ph ph-squares-four"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i>
+            <span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="subjects.html">
+            <i class="ph ph-books"></i>
+            <span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i>
+            <span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="progress.html">
+            <i class="ph ph-chart-line-up"></i>
+            <span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i>
+            <span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="study.html">
+            <i class="ph ph-timer"></i>
+            <span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i>
+            <span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn">
+          <i class="ph ph-sign-out"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      
+      <header class="dashboard-header">
+        <div>
+          <h1 id="welcomeText">Welcome back</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;" id="dateLabel">Let's make today productive.</p>
+        </div>
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn">
+            <i class="ph ph-list"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="dashboard-grid">
+
+        <!-- Today's Mood Widget -->
+        <div class="widget-card" id="moodWidget">
+          <div class="widget-title">
+            <i class="ph ph-smiley"></i> Today's Mood
+          </div>
+          <div id="moodDisplay" style="font-size: 3rem; margin: 0.5rem 0; line-height:1;">—</div>
+          <p id="moodLabel" style="color:var(--text-muted); font-size:0.9rem; margin:0;">Not logged yet</p>
+          <a href="mood.html" style="color:var(--accent-primary); font-size:0.85rem; margin-top:0.75rem; display:inline-block;">Log mood →</a>
+        </div>
+
+        <!-- Habits Widget (full width) -->
+        <div class="widget-card" style="grid-column: 1 / -1;">
+          <div class="widget-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <span><i class="ph-fill ph-fire" style="color:#ff9800;"></i> My Habits</span>
+            <a href="habits.html" style="color:var(--accent-primary); font-size:0.85rem; font-weight:500;">Manage Habits →</a>
+          </div>
+          <div id="dashHabitsList" style="margin-top:1rem;">
+            <p style="color:var(--text-muted);">Loading habits...</p>
+          </div>
+        </div>
+
+        <!-- Today's To-Do List (full width) -->
+        <div class="widget-card" style="grid-column: 1 / -1;">
+          <div class="widget-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <span><i class="ph ph-list-checks"></i> Today's To-Do List</span>
+            <a href="calendar.html" style="color:var(--accent-primary); font-size:0.85rem; font-weight:500;">Open Calendar →</a>
+          </div>
+
+          <form id="quickTaskForm" style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:0.75rem; margin: 1rem 0 1.25rem; align-items:end;">
+            <div style="display:flex; flex-direction:column; gap:0.3rem;">
+              <label style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">Task</label>
+              <input type="text" id="quickTaskInput" placeholder="What do you need to do?" required>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.3rem;">
+              <label style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">Subject</label>
+              <select id="quickTaskSubject">
+                <option value="">— No Subject —</option>
+              </select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.3rem;">
+              <label style="font-size:0.8rem; color:var(--text-muted); font-weight:500;">Importance</label>
+              <select id="quickTaskImportance">
+                <option value="high">🔴 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="white-space:nowrap; padding:0.65rem 1.2rem; font-size:0.9rem; height:fit-content;">+ Add Task</button>
+          </form>
+
+          <ul id="dashTodoList" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.6rem;">
+            <li style="color:var(--text-muted);">Loading tasks...</li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="planner-api.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="dashboard-home.js"></script>
+</body>
+</html>

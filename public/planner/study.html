@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Timer | AI Student Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+</head>
+<body>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <div class="dashboard-layout">
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>My Planner</h2>
+        <button class="close-sidebar-btn" id="closeSidebarBtn"><i class="ph ph-x"></i></button>
+      </div>
+      
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item" href="dashboard.html">
+            <i class="ph ph-squares-four"></i><span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="calendar.html">
+            <i class="ph ph-calendar-blank"></i><span>Calendar</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="subjects.html">
+            <i class="ph ph-books"></i><span>Subjects</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="habits.html">
+            <i class="ph ph-arrows-clockwise"></i><span>Habits</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="progress.html">
+            <i class="ph ph-chart-line-up"></i><span>Progress</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="mood.html">
+            <i class="ph ph-smiley"></i><span>Mood Tracker</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item active" href="study.html">
+            <i class="ph ph-timer"></i><span>Timer</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" href="games.html">
+            <i class="ph ph-game-controller"></i><span>Games</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-logout">
+        <a class="nav-item" id="logoutBtn"><i class="ph ph-sign-out"></i><span>Logout</span></a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="dashboard-header">
+        <div>
+          <h1>Study Session</h1>
+          <p style="color: var(--text-muted); margin-top: 0.5rem;" id="timerStatusLabel">Configure your session.</p>
+        </div>
+        <div class="header-actions">
+          <button class="hamburger-btn" id="hamburgerBtn"><i class="ph ph-list"></i></button>
+        </div>
+      </header>
+
+      <div class="timer-container">
+        
+        <form class="timer-config" id="timerConfigForm">
+          <div class="form-group">
+            <label>Subject</label>
+            <select id="timerSubject" required>
+              <option value="" disabled selected>Select Subject</option>
+              <!-- JS Populates -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Study (Min)</label>
+            <input type="number" id="studyDur" value="25" min="1" required style="width: 100px;">
+          </div>
+          <div class="form-group">
+            <label>Break (Min)</label>
+            <input type="number" id="breakDur" value="5" min="0" required style="width: 100px;">
+          </div>
+        </form>
+
+        <div class="timer-display-wrapper" id="timerDisplay">
+          <div class="timer-digits" id="timeDigits">25:00</div>
+          <div class="timer-label" id="timePhaseLabel">Ready</div>
+        </div>
+
+        <div class="timer-controls">
+          <button type="button" class="timer-btn" id="stopBtn" title="Stop & Reset">
+            <i class="ph ph-stop"></i>
+          </button>
+          <button type="button" class="timer-btn play" id="playPauseBtn" title="Start/Pause">
+            <i class="ph ph-play" id="playIcon"></i>
+          </button>
+          <button type="button" class="timer-btn" id="skipBtn" title="Skip Phase">
+            <i class="ph ph-step-forward"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="planner-api.js"></script>
+  <script src="dashboard.js"></script> 
+  <script src="study.js"></script>
+</body>
+</html>
+

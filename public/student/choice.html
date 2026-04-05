@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus – Choose App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            padding: 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .cards {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.planner:hover {
+            border-color: #fca5a5;
+            box-shadow: 0 20px 40px rgba(239, 68, 68, 0.2);
+        }
+
+        .card.tracker:hover {
+            border-color: #a78bfa;
+            box-shadow: 0 20px 40px rgba(108, 99, 255, 0.2);
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .logout {
+            margin-top: 3rem;
+            display: inline-block;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .logout:hover {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Welcome to Smart Campus</h1>
+        <p class="subtitle">Select the application you want to use today.</p>
+
+        <div class="cards">
+            <a href="/student" class="card tracker">
+                <div class="icon">🏫</div>
+                <h2>Classroom Tracker</h2>
+                <p>View your master timetable, check your enrollments, and track live classroom availability on campus.</p>
+            </a>
+
+            <a href="/planner/dashboard.html" class="card planner">
+                <div class="icon">📝</div>
+                <h2>Student Planner</h2>
+                <p>Manage your personal study sessions, tasks, habits, and progress with an AI-driven dashboard.</p>
+            </a>
+        </div>
+        
+        <a href="#" class="logout" onclick="logout()">Sign Out</a>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('campus_token');
+            localStorage.removeItem('campus_user');
+            localStorage.removeItem('campus_role');
+            window.location.href = '/login';
+        }
+
+        // Redirect if not logged in
+        if (!localStorage.getItem('campus_token')) {
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+
+</html>

@@ -33,6 +33,7 @@ const professorRoutes = require('./routes/professor');
 const enrollmentRoutes = require('./routes/enrollments');
 const adminRoutes = require('./routes/admin');
 const noiseRoutes = require('./routes/noise');
+const plannerRoutes = require('./routes/planner');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/blocks', blockRoutes);
@@ -45,6 +46,7 @@ app.use('/api/professor', professorRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/noise', noiseRoutes);
+app.use('/api/planner', plannerRoutes);
 
 // Compatibility alias for old admin stats
 app.get('/api/admin/stats', (req, res) => {
@@ -104,6 +106,7 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adm
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, 'public', 'room.html')));
 
 // Student pages
+app.get('/student/choice', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'choice.html')));
 app.get('/student', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'dashboard.html')));
 app.get('/student/timetable', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'timetable.html')));
 app.get('/student/notifications', (req, res) => res.sendFile(path.join(__dirname, 'public', 'student', 'notifications.html')));
