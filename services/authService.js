@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 // SECURITY: JWT_SECRET must be set in environment — fail loudly at import time
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET environment variable is required. Set it in .env');
+    console.error('FATAL: JWT_SECRET environment variable is missing.');
+    console.error('Please set JWT_SECRET in your environment or deployment dashboard (e.g., Render, Vercel).');
     process.exit(1);
 }
 
