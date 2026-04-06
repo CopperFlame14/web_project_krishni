@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Date Label ──────────────────────────────────────────────────────────
   const dateLabel = document.getElementById('dateLabel');
@@ -17,27 +17,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return [d.getFullYear(), m, day].join('-');
   })();
 
-  // ── Today's Mood ────────────────────────────────────────────────────────
+  // ── Today's Mood (from API) ───────────────────────────────────────────
   const moodEmojis  = { happy:'😄', neutral:'😐', sad:'😔', stressed:'😫' };
   const moodLabels  = { happy:'Happy', neutral:'Neutral', sad:'Sad', stressed:'Stressed' };
-
   const moodDisplay = document.getElementById('moodDisplay');
   const moodLabel   = document.getElementById('moodLabel');
 
-  const moodsRaw = window.localStorage.getItem('simulatedMoodsDB');
-  if (moodsRaw) {
-    const moods = JSON.parse(moodsRaw);
-    const todayMood = moods.find(m => m.mood_date === todayStr);
-    if (todayMood && moodEmojis[todayMood.mood]) {
-      moodDisplay.textContent = moodEmojis[todayMood.mood];
-      moodLabel.textContent   = moodLabels[todayMood.mood] || todayMood.mood;
+  try {
+    const { data: moodData } = await window.supabaseClient
+      .from('daily_moods').select('mood').eq('mood_date', todayStr).single();
+    if (moodData && moodEmojis[moodData.mood]) {
+      moodDisplay.textContent = moodEmojis[moodData.mood];
+      moodLabel.textContent   = moodLabels[moodData.mood] || moodData.mood;
     }
-  }
+  } catch (e) { /* no mood today */ }
 
-  // ── Habits List on Dashboard ────────────────────────────────────────────
+  // ── Habits List on Dashboard (from API) ────────────────────────────────
   const dashHabitsList = document.getElementById('dashHabitsList');
 
-  const calcStreak = (habitId, habits, logs) => {
+  const calcStreak = (habitId, logs) => {
     const dates = [...new Set(
       logs.filter(l => l.habit_id === habitId).map(l => l.log_date)
     )].sort((a, b) => new Date(b) - new Date(a));
@@ -58,15 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return streak;
   };
 
-  const renderDashHabits = () => {
-    const habitsRaw = window.localStorage.getItem('simulatedHabitsDB');
-    const logsRaw   = window.localStorage.getItem('simulatedHabitLogsDB');
-    const habits = habitsRaw ? JSON.parse(habitsRaw) : [];
-    const logs   = logsRaw  ? JSON.parse(logsRaw)   : [];
+  let allHabits = [];
+  let allHabitLogs = [];
 
+  const fetchHabitsData = async () => {
+    try {
+      const [hRes, lRes] = await Promise.all([
+        window.supabaseClient.from('habits').select('*'),
+        window.supabaseClient.from('habit_logs').select('*')
+      ]);
+      allHabits = hRes.data || [];
+      allHabitLogs = lRes.data || [];
+    } catch (e) { console.error('Failed fetching habits', e); }
+  };
+
+  const renderDashHabits = () => {
     if (!dashHabitsList) return;
 
-    if (habits.length === 0) {
+    if (allHabits.length === 0) {
       dashHabitsList.innerHTML = `<p style="color:var(--text-muted);">No habits yet. <a href="habits.html" style="color:var(--accent-primary);">Add your first habit →</a></p>`;
       return;
     }
@@ -75,11 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:0.75rem;';
 
-    habits.forEach(h => {
-      const streak      = calcStreak(h.id, habits, logs);
-      const loggedToday = logs.some(l => l.habit_id === h.id && l.log_date === todayStr);
+    allHabits.forEach(h => {
+      const streak      = calcStreak(h.id, allHabitLogs);
+      const loggedToday = allHabitLogs.some(l => l.habit_id === h.id && l.log_date === todayStr);
 
-      // Badge
       let badge = '';
       if (streak >= 100)      badge = '<span style="background:#FFD70020;color:#FFD700;border:1px solid #FFD70050;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:600;">🥇 Gold</span>';
       else if (streak >= 50)  badge = '<span style="background:#C0C0C020;color:#C0C0C0;border:1px solid #C0C0C050;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:600;">🥈 Silver</span>';
@@ -108,12 +114,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!loggedToday) {
         const btn = card.querySelector('.dash-log-btn');
-        btn.addEventListener('click', () => {
-          const currentLogs = JSON.parse(window.localStorage.getItem('simulatedHabitLogsDB') || '[]');
-          currentLogs.push({ id: Date.now().toString(), habit_id: h.id, log_date: todayStr });
-          window.localStorage.setItem('simulatedHabitLogsDB', JSON.stringify(currentLogs));
-          if (window.showToast) window.showToast('Habit Logged! Keep the fire burning. 🔥', 'ph-fire');
-          renderDashHabits(); // re-render
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          btn.textContent = '...';
+          try {
+            await window.supabaseClient.from('habit_logs').insert([{
+              habit_id: h.id, log_date: todayStr
+            }]);
+            if (window.showToast) window.showToast('Habit Logged! Keep the fire burning. 🔥', 'ph-fire');
+            await fetchHabitsData();
+            renderDashHabits();
+          } catch (e) { console.error('Failed to log habit', e); }
         });
       }
 
@@ -123,25 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
     dashHabitsList.appendChild(grid);
   };
 
+  await fetchHabitsData();
   renderDashHabits();
 
-  // ── Load Subjects into dropdown ─────────────────────────────────────────
+  // ── Load Subjects into dropdown (from API) ─────────────────────────────
   let subjects = [];
   const subjectDrop = document.getElementById('quickTaskSubject');
 
-  const loadSubjects = () => {
-    const raw = window.localStorage.getItem('simulatedSubjectsDB');
-    if (raw) {
-      subjects = JSON.parse(raw);
-      subjects.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name;
-        subjectDrop.appendChild(opt);
-      });
-    }
-  };
-  loadSubjects();
+  try {
+    const { data: subjectsData } = await window.supabaseClient.from('subjects').select('*');
+    subjects = subjectsData || [];
+    subjects.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      subjectDrop.appendChild(opt);
+    });
+  } catch (e) { console.error('Failed loading subjects', e); }
 
   // ── Importance config ──────────────────────────────────────────────────
   const importanceMeta = {
@@ -150,35 +159,36 @@ document.addEventListener('DOMContentLoaded', () => {
     low:    { label: 'Low',    color: '#10b981', dot: '🟢' },
   };
 
-  // ── Today's To-Do List ──────────────────────────────────────────────────
-  let simDB = (() => {
-    const raw = window.localStorage.getItem('simulatedCalendarDB');
-    return raw ? JSON.parse(raw) : {};
-  })();
-
+  // ── Today's To-Do List (from API) ──────────────────────────────────────
   const todoList  = document.getElementById('dashTodoList');
   const quickForm = document.getElementById('quickTaskForm');
   const quickInput = document.getElementById('quickTaskInput');
 
+  let todayTasks = [];
+
+  const fetchTasks = async () => {
+    try {
+      const { data } = await window.supabaseClient
+        .from('tasks').select('*').eq('task_date', todayStr);
+      todayTasks = data || [];
+    } catch (e) { console.error('Failed fetching tasks', e); }
+  };
+
   const renderTodos = () => {
-    const tasks = simDB[todayStr]?.tasks || [];
     todoList.innerHTML = '';
 
-    if (tasks.length === 0) {
+    if (todayTasks.length === 0) {
       todoList.innerHTML = `<li style="color:var(--text-muted); padding:0.5rem 0;">No tasks yet — add one above!</li>`;
       return;
     }
 
-    // Sort: incomplete + high-importance first
     const importanceOrder = { high: 0, medium: 1, low: 2 };
-    const sorted = tasks.map((t, i) => ({ ...t, _idx: i }))
-      .sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        return (importanceOrder[a.importance] ?? 1) - (importanceOrder[b.importance] ?? 1);
-      });
+    const sorted = [...todayTasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return (importanceOrder[a.importance] ?? 1) - (importanceOrder[b.importance] ?? 1);
+    });
 
     sorted.forEach((t) => {
-      const i = t._idx;
       const subj = subjects.find(s => s.id === t.subject_id);
       const imp  = importanceMeta[t.importance] || importanceMeta.medium;
 
@@ -206,19 +216,22 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      // Toggle complete on clicking the checkbox icon or the task text
+      // Toggle complete
       const checkIcon = li.querySelector('i.ph');
       const titleSpan = li.querySelector('span');
-      const toggleComplete = () => {
-        simDB[todayStr].tasks[i].completed = !simDB[todayStr].tasks[i].completed;
-        window.localStorage.setItem('simulatedCalendarDB', JSON.stringify(simDB));
-        if (window.showToast) {
-          window.showToast(
-            simDB[todayStr].tasks[i].completed ? "Great job! One step closer to your goals." : "No worries, keep pushing!",
-            simDB[todayStr].tasks[i].completed ? "ph-stars" : "ph-hands-clapping"
-          );
-        }
-        renderTodos();
+      const toggleComplete = async () => {
+        try {
+          await window.supabaseClient.from('tasks')
+            .update({ completed: !t.completed }).eq('id', t.id);
+          if (window.showToast) {
+            window.showToast(
+              !t.completed ? "Great job! One step closer to your goals." : "No worries, keep pushing!",
+              !t.completed ? "ph-stars" : "ph-hands-clapping"
+            );
+          }
+          await fetchTasks();
+          renderTodos();
+        } catch (e) { console.error('Failed toggling task', e); }
       };
       checkIcon.addEventListener('click', toggleComplete);
       titleSpan.addEventListener('click', toggleComplete);
@@ -227,20 +240,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const delBtn = li.querySelector('.del-task-btn');
       delBtn.addEventListener('mouseenter', () => delBtn.style.color = '#ef4444');
       delBtn.addEventListener('mouseleave', () => delBtn.style.color = 'var(--text-muted)');
-      delBtn.addEventListener('click', (e) => {
+      delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        simDB[todayStr].tasks.splice(i, 1);
-        window.localStorage.setItem('simulatedCalendarDB', JSON.stringify(simDB));
-        renderTodos();
+        try {
+          await window.supabaseClient.from('tasks').delete().eq('id', t.id);
+          await fetchTasks();
+          renderTodos();
+        } catch (e) { console.error('Failed deleting task', e); }
       });
 
       todoList.appendChild(li);
     });
   };
 
-  // Quick-add with subject + importance
+  // Quick-add task via API
   if (quickForm) {
-    quickForm.addEventListener('submit', (e) => {
+    quickForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title      = quickInput.value.trim();
       const subject_id = document.getElementById('quickTaskSubject').value || null;
@@ -248,26 +263,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!title) return;
 
-      if (!simDB[todayStr]) simDB[todayStr] = { progress: null, tasks: [] };
-      simDB[todayStr].tasks.push({
-        title,
-        subject_id,
-        importance,
-        completed: false,
-        time_spent_minutes: 0
-      });
-      window.localStorage.setItem('simulatedCalendarDB', JSON.stringify(simDB));
+      try {
+        await window.supabaseClient.from('tasks').insert([{
+          subject_id,
+          task_date: todayStr,
+          title,
+          completed: false
+        }]);
 
-      quickInput.value = '';
-      document.getElementById('quickTaskSubject').value    = '';
-      document.getElementById('quickTaskImportance').value = 'medium';
-      renderTodos();
+        quickInput.value = '';
+        document.getElementById('quickTaskSubject').value    = '';
+        document.getElementById('quickTaskImportance').value = 'medium';
+        await fetchTasks();
+        renderTodos();
+      } catch (e) { console.error('Failed adding task', e); }
     });
   }
 
+  await fetchTasks();
   renderTodos();
 
-  // Add responsive grid fallback for small screens
+  // Responsive grid fallback
   const form = document.getElementById('quickTaskForm');
   if (form && window.innerWidth < 700) {
     form.style.gridTemplateColumns = '1fr 1fr';

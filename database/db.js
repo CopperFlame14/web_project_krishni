@@ -1,5 +1,9 @@
 require('dotenv').config();
 const { Pool } = require('pg');
+const pg = require('pg');
+pg.types.setTypeParser(1082, function(stringValue) {
+    return stringValue; // Keep DATE as string 'YYYY-MM-DD'
+});
 
 if (!process.env.DATABASE_URL) {
     console.error('FATAL: DATABASE_URL environment variable is missing.');

@@ -1,6 +1,22 @@
 // Smart Campus - Custom API to mock Supabase SDK using our Express endpoints
 window.APP_CONFIG = { SUPABASE_URL: 'internal-api' };
 
+// Normalize DATE columns from ISO ("2026-04-06T00:00:00.000Z") to "YYYY-MM-DD"
+const _DATE_FIELDS = ['task_date', 'progress_date', 'session_date', 'mood_date', 'log_date'];
+const _normalizeDates = (obj) => {
+    if (Array.isArray(obj)) return obj.map(_normalizeDates);
+    if (obj && typeof obj === 'object') {
+        const out = { ...obj };
+        for (const f of _DATE_FIELDS) {
+            if (out[f] && typeof out[f] === 'string' && out[f].includes('T')) {
+                out[f] = out[f].split('T')[0];
+            }
+        }
+        return out;
+    }
+    return obj;
+};
+
 window.supabaseClient = {
     auth: {
         async getUser() {
@@ -44,6 +60,7 @@ window.supabaseClient = {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('campus_token')}` }
                     });
                     let data = await res.json();
+                    data = _normalizeDates(data);
                     
                     if (Array.isArray(data)) {
                         for (let q of queryParams) {

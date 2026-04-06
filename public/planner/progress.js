@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
        // -------------------------------------
        // 1. Daily Hours Bar Chart
        // -------------------------------------
-       const dailyHoursArray = dailyMinsArray.map(m => (m / 60).toFixed(1));
+       const dailyHoursArray = dailyMinsArray.map(m => parseFloat((m / 60).toFixed(1)));
        const dayLabels = past7Days.map(d => d.toLocaleDateString('en-US', { weekday: 'short' }));
 
        const ctxBar = document.getElementById('dailyHoursChart').getContext('2d');
