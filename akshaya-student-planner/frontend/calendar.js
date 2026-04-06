@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
              const db = getSimDB();
              if(!db[dateStr]) db[dateStr] = { tasks: [] };
-             db[dateStr].tasks.push({ title, subject_id: subject_id || null, completed: false, time_spent_minutes: 0 });
+             db[dateStr].tasks.push({ id: Date.now().toString(), title, subject_id: subject_id || null, completed: false, time_spent_minutes: 0, importance: 'medium' });
              setSimDB(db);
           }
           await loadSidePanel(dateStr, dateObj);

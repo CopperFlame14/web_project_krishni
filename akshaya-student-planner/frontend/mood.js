@@ -14,11 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let savedMoodToday = null;
 
     // Load Mock DB
-    if (!window.simulatedMoodsDB) {
-       window.simulatedMoodsDB = window.localStorage.getItem('simulatedMoodsDB') 
+    const getMoodsDB = () => {
+       return window.localStorage.getItem('simulatedMoodsDB') 
           ? JSON.parse(window.localStorage.getItem('simulatedMoodsDB')) 
           : [];
-    }
+    };
 
     const loadTodayMood = async () => {
       const d = new Date();
@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', async () => {
            const { data } = await window.supabaseClient.from('daily_moods').select('mood').eq('user_id', user.id).eq('mood_date', todayStr).single();
            if(data) savedMoodToday = data.mood;
         } else {
-           const match = window.simulatedMoodsDB.find(m => m.mood_date === todayStr);
+           const db = getMoodsDB();
+           const match = db.find(m => m.mood_date === todayStr);
            if(match) savedMoodToday = match.mood;
         }
       } catch (err) { }
@@ -99,13 +100,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               await window.supabaseClient.from('daily_moods').insert([{ user_id: user.id, mood: moodObj.id, mood_date: todayStr }]);
            }
         } else {
-           const idx = window.simulatedMoodsDB.findIndex(m => m.mood_date === todayStr);
+           const db = getMoodsDB();
+           const idx = db.findIndex(m => m.mood_date === todayStr);
            if(idx > -1) {
-             window.simulatedMoodsDB[idx].mood = moodObj.id;
+             db[idx].mood = moodObj.id;
            } else {
-             window.simulatedMoodsDB.push({ id: Date.now().toString(), mood: moodObj.id, mood_date: todayStr });
+             db.push({ id: Date.now().toString(), mood: moodObj.id, mood_date: todayStr });
            }
-           window.localStorage.setItem('simulatedMoodsDB', JSON.stringify(window.simulatedMoodsDB));
+           window.localStorage.setItem('simulatedMoodsDB', JSON.stringify(db));
         }
 
         savedMoodToday = moodObj.id;

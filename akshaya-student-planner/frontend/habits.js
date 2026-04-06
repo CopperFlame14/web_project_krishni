@@ -162,10 +162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           habit_id: habitId, user_id: user.id, log_date: todayStr
         }]);
       } else {
-        window.simulatedHabitLogsDB.push({
+        const currentLogs = JSON.parse(window.localStorage.getItem('simulatedHabitLogsDB') || '[]');
+        currentLogs.push({
           id: Date.now().toString(), habit_id: habitId, log_date: todayStr
         });
-        saveLocal();
+        window.localStorage.setItem('simulatedHabitLogsDB', JSON.stringify(currentLogs));
       }
       await loadHabits();
       if (window.showToast) {
@@ -208,8 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Read current state fresh, then push
         const current = JSON.parse(window.localStorage.getItem('simulatedHabitsDB') || '[]');
         current.push({ id: Date.now().toString(), title });
-        window.simulatedHabitsDB = current;
-        saveLocal();
+        window.localStorage.setItem('simulatedHabitsDB', JSON.stringify(current));
       }
       newHabitInput.value = '';
       await loadHabits();

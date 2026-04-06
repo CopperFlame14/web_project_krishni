@@ -151,16 +151,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ── Today's To-Do List ──────────────────────────────────────────────────
-  let simDB = (() => {
+  const getSimDBTasks = () => {
     const raw = window.localStorage.getItem('simulatedCalendarDB');
     return raw ? JSON.parse(raw) : {};
-  })();
+  };
 
   const todoList  = document.getElementById('dashTodoList');
   const quickForm = document.getElementById('quickTaskForm');
   const quickInput = document.getElementById('quickTaskInput');
 
   const renderTodos = () => {
+    let simDB = getSimDBTasks();
     const tasks = simDB[todayStr]?.tasks || [];
     todoList.innerHTML = '';
 
@@ -210,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const checkIcon = li.querySelector('i.ph');
       const titleSpan = li.querySelector('span');
       const toggleComplete = () => {
+        let simDB = getSimDBTasks();
         simDB[todayStr].tasks[i].completed = !simDB[todayStr].tasks[i].completed;
         window.localStorage.setItem('simulatedCalendarDB', JSON.stringify(simDB));
         if (window.showToast) {
@@ -229,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
       delBtn.addEventListener('mouseleave', () => delBtn.style.color = 'var(--text-muted)');
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        let simDB = getSimDBTasks();
         simDB[todayStr].tasks.splice(i, 1);
         window.localStorage.setItem('simulatedCalendarDB', JSON.stringify(simDB));
         renderTodos();
@@ -248,8 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!title) return;
 
+      let simDB = getSimDBTasks();
       if (!simDB[todayStr]) simDB[todayStr] = { progress: null, tasks: [] };
       simDB[todayStr].tasks.push({
+        id: Date.now().toString(),
         title,
         subject_id,
         importance,
