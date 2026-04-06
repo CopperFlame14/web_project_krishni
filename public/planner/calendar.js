@@ -89,7 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  let renderCounter = 0;
   const renderCalendar = async () => {
+    const currentRender = ++renderCounter;
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -111,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render days
     for (let i = 1; i <= daysInMonth; i++) {
+       if (renderCounter !== currentRender) return; // Abort if superseded
+
        const cell = document.createElement('div');
        cell.classList.add('calendar-cell');
        cell.textContent = i;
@@ -133,8 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
          cell.classList.add('selected');
        }
 
-       // Look up if has data
        const { tasks } = await fetchDayData(dateStr);
+       if (renderCounter !== currentRender) return; // Abort if superseded
+
        if (tasks.length > 0) {
           const dot = document.createElement('div');
           dot.classList.add('data-dot');
