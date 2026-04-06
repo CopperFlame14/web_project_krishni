@@ -17,9 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     mobileOverlay.classList.remove('active');
   };
 
-  hamburgerBtn.addEventListener('click', openSidebar);
-  closeSidebarBtn.addEventListener('click', closeSidebar);
-  mobileOverlay.addEventListener('click', closeSidebar);
+  hamburgerBtn?.addEventListener('click', openSidebar);
+  closeSidebarBtn?.addEventListener('click', closeSidebar);
+  mobileOverlay?.addEventListener('click', closeSidebar);
 
   // Retrieve user data to display name
   let userName = "Student";
@@ -55,11 +55,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error("Error fetching user session:", err);
   }
 
-  // Update Welcome Text
-  welcomeText.textContent = `Welcome back, ${userName}`;
+  // Update Welcome Text (some pages reuse this script without the element)
+  if (welcomeText) {
+    welcomeText.textContent = `Welcome back, ${userName}`;
+  }
 
   // Logout Logic
-  logoutBtn.addEventListener('click', async () => {
+  logoutBtn?.addEventListener('click', async () => {
     try {
       if (window.supabaseClient && !window.APP_CONFIG.SUPABASE_URL.includes('placeholder')) {
         await window.supabaseClient.auth.signOut();

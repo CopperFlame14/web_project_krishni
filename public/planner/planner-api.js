@@ -43,6 +43,7 @@ window.supabaseClient = {
         
         let queryParams = [];
         let singleResult = false;
+        let pendingAction = null;
         
         return {
             select(cols) { return this; },
@@ -56,6 +57,56 @@ window.supabaseClient = {
             
             async then(resolve) {
                 try {
+                    // If an action (update/delete) was queued, execute it now so
+                    // chains like .update(...).eq(...) or .delete().eq(...) work.
+                    if (pendingAction?.type === 'update') {
+                        let method = 'PUT';
+                        let url = `/api/planner${endpoint}`;
+
+                        if (tableName === 'tasks') {
+                            const idEq = queryParams.find(q => q.startsWith('id='));
+                            if (idEq) url += `/${idEq.split('=')[1]}`;
+                        } else if (tableName === 'daily_moods') {
+                            // Our API uses POST for mood "upserts"
+                            method = 'POST';
+                            const dateEq = queryParams.find(q => q.startsWith('mood_date='));
+                            if (dateEq) pendingAction.obj.mood_date = dateEq.split('=')[1];
+                        }
+
+                        const res = await fetch(url, {
+                            method,
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('campus_token')}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(pendingAction.obj)
+                        });
+                        let data = await res.json();
+                        data = _normalizeDates(data);
+                        resolve({ data, error: null });
+                        return;
+                    }
+
+                    if (pendingAction?.type === 'delete') {
+                        if (tableName === 'habit_logs') {
+                            resolve({ data: [], error: null }); // handled by CASCADE
+                            return;
+                        }
+
+                        let url = `/api/planner${endpoint}`;
+                        const idEq = queryParams.find(q => q.startsWith('id='));
+                        if (idEq) url += `/${idEq.split('=')[1]}`;
+
+                        const res = await fetch(url, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('campus_token')}` }
+                        });
+                        let data = await res.json();
+                        data = _normalizeDates(data);
+                        resolve({ data, error: null });
+                        return;
+                    }
+
                     let res = await fetch(`/api/planner${endpoint}`, {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('campus_token')}` }
                     });
@@ -93,52 +144,14 @@ window.supabaseClient = {
                 }
             },
             
-            async update(obj) {
-                 try {
-                     let method = 'PUT';
-                     let url = `/api/planner${endpoint}`;
-                     if (tableName === 'tasks') {
-                         let idEq = queryParams.find(q => q.startsWith('id='));
-                         if (idEq) url += `/${idEq.split('=')[1]}`;
-                     } else if (tableName === 'daily_moods') {
-                         method = 'POST';
-                         let dateEq = queryParams.find(q => q.startsWith('mood_date='));
-                         if (dateEq) obj.mood_date = dateEq.split('=')[1];
-                     }
-                     
-                     let res = await fetch(url, {
-                        method: method,
-                        headers: { 
-                            'Authorization': `Bearer ${localStorage.getItem('campus_token')}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(obj)
-                     });
-                     let data = await res.json();
-                     return { data, error: null };
-                 } catch(e) {
-                     return { data: null, error: e };
-                 }
+            update(obj) {
+                pendingAction = { type: 'update', obj: { ...obj } };
+                return this;
             },
             
-            async delete() {
-                 try {
-                     if (tableName === 'habit_logs') {
-                         return { data: [], error: null }; // handled by CASCADE
-                     }
-                     let url = `/api/planner${endpoint}`;
-                     let idEq = queryParams.find(q => q.startsWith('id='));
-                     if (idEq) url += `/${idEq.split('=')[1]}`;
-                     
-                     let res = await fetch(url, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('campus_token')}` }
-                     });
-                     let data = await res.json();
-                     return { data, error: null };
-                 } catch(e) {
-                     return { data: null, error: e };
-                 }
+            delete() {
+                pendingAction = { type: 'delete' };
+                return this;
             }
         };
     }
